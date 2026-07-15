@@ -1,0 +1,13 @@
+:80 {
+    route {
+        @actuator path /actuator /actuator/*
+        respond @actuator 404
+
+        @backend path /api /api/* /oauth2 /oauth2/* /login/oauth2 /login/oauth2/*
+        reverse_proxy @backend app:8080
+
+        root * /srv
+        try_files {path} /index.html
+        file_server
+    }
+}

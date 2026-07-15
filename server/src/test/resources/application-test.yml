@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: studystack
+  main:
+    banner-mode: "off"
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

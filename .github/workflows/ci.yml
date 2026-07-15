@@ -1,0 +1,132 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+          cache-dependency-path: server/pom.xml
+      - name: Verify backend
+        working-directory: server
+        run: |
+          chmod +x mvnw
+          ./mvnw -B -ntp verify
+      - name: Upload OpenAPI contract
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-contract
+          path: server/target/openapi/openapi.json
+          if-no-files-found: error
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Install frontend dependencies
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+      - name: Lint frontend
+        working-directory: web
+        run: pnpm lint
+      - name: Check frontend types
+        working-directory: web
+        run: pnpm typecheck
+      - name: Test frontend
+        working-directory: web
+        run: pnpm test
+      - name: Build frontend
+        working-directory: web
+        run: pnpm build
+
+  contract:
+    needs: backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Download OpenAPI contract
+        uses: actions/download-artifact@v4
+        with:
+          name: openapi-contract
+          path: server/target/openapi
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Install frontend dependencies
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+      - name: Verify generated contract
+        working-directory: web
+        run: pnpm contract:check
+
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Validate Compose configuration
+        run: docker compose --env-file .env.example -f deploy/compose.yml config --quiet
+      - name: Test Compose policy
+        run: node --test deploy/tests/compose-config.test.mjs
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Install frontend dependencies
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        working-directory: web
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Start application topology
+        run: docker compose --env-file .env.example -f deploy/compose.yml up -d --build --wait
+      - name: Test Caddy routing
+        working-directory: web
+        run: pnpm test:e2e -- foundation-routing.spec.ts
+      - name: Clean up application topology
+        if: always()
+        run: docker compose --env-file .env.example -f deploy/compose.yml down --volumes
