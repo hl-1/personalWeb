@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:studystack}
+    username: ${DB_USER:studystack}
+    password: ${DB_PASSWORD}
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

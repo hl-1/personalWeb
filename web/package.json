@@ -1,0 +1,43 @@
+{
+  "name": "studystack-web",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "pnpm typecheck && vite build",
+    "contract:check": "node -e \"require('node:fs').mkdirSync('.contract',{recursive:true})\" && openapi-typescript ../server/target/openapi/openapi.json -o .contract/openapi.d.ts && node scripts/assert-contract-sync.mjs src/shared/api/generated/openapi.d.ts .contract/openapi.d.ts",
+    "contract:generate": "node -e \"require('node:fs').mkdirSync('src/shared/api/generated',{recursive:true})\" && openapi-typescript ../server/target/openapi/openapi.json -o src/shared/api/generated/openapi.d.ts",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@tanstack/vue-query": "5.101.2",
+    "pinia": "3.0.4",
+    "vue": "3.5.39",
+    "vue-router": "5.1.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.61.1",
+    "@types/node": "26.1.1",
+    "@vitejs/plugin-vue": "6.0.7",
+    "@vue/compiler-sfc": "3.5.39",
+    "@vue/test-utils": "2.4.11",
+    "eslint": "10.7.0",
+    "eslint-plugin-vue": "10.9.2",
+    "globals": "17.7.0",
+    "jsdom": "29.1.1",
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.64.0",
+    "vite": "8.1.4",
+    "vitest": "4.1.10",
+    "vue-tsc": "3.3.7",
+    "yaml": "2.9.0"
+  }
+}
