@@ -28,6 +28,9 @@ services:
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      STUDYSTACK_ADMIN_GITHUB_IDS: ${STUDYSTACK_ADMIN_GITHUB_IDS}
     depends_on:
       postgres:
         condition: service_healthy

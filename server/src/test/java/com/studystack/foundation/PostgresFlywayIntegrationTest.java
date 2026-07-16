@@ -61,12 +61,12 @@ class PostgresFlywayIntegrationTest {
     }
 
     @Test
-    void appliesFlywayBaselineVersionOne() {
+    void appliesFoundationAndIdentityMigrationsInOrder() {
         List<String> appliedVersions = Arrays.stream(flyway.info().applied())
                 .map(info -> info.getVersion().getVersion())
                 .toList();
 
-        assertEquals(List.of("1"), appliedVersions);
+        assertEquals(List.of("1", "2"), appliedVersions);
     }
 
     @Test
@@ -75,7 +75,7 @@ class PostgresFlywayIntegrationTest {
     }
 
     @Test
-    void createsNoBusinessTables() {
+    void createsOnlyTheApprovedFoundationAndIdentityTables() {
         List<String> tables = jdbcTemplate.queryForList(
                 """
                 select table_name
@@ -85,7 +85,12 @@ class PostgresFlywayIntegrationTest {
                 """,
                 String.class);
 
-        assertEquals(List.of("flyway_schema_history"), tables);
+        assertEquals(List.of(
+                "flyway_schema_history",
+                "identity_external_identity",
+                "identity_user_account",
+                "spring_session",
+                "spring_session_attributes"), tables);
     }
 
     @Test

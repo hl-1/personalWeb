@@ -40,6 +40,9 @@ describe('configuration policy', () => {
       CADDY_HTTP_PORT: '8080',
     })
     expect(rootEnv.DB_PASSWORD).toMatch(/^EXAMPLE_ONLY_/)
+    expect(rootEnv.GITHUB_CLIENT_ID).toBe('EXAMPLE_ONLY_GITHUB_CLIENT_ID')
+    expect(rootEnv.GITHUB_CLIENT_SECRET).toBe('EXAMPLE_ONLY_GITHUB_CLIENT_SECRET')
+    expect(rootEnv.STUDYSTACK_ADMIN_GITHUB_IDS).toBe('')
     expect(webEnv).toEqual({ VITE_API_BASE_URL: '/api' })
   })
 

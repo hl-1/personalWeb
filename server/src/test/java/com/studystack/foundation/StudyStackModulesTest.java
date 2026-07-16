@@ -23,8 +23,8 @@ class StudyStackModulesTest {
             "media",
             "portfolio",
             "shared");
-    private static final Set<String> BUSINESS_MODULES = Set.of(
-            "admin", "comment", "content", "identity", "media", "portfolio");
+    private static final Set<String> EMPTY_BUSINESS_MODULES = Set.of(
+            "admin", "comment", "content", "media", "portfolio");
     private static final Path MAIN_PACKAGE = Path.of("src", "main", "java", "com", "studystack");
 
     @Test
@@ -45,10 +45,10 @@ class StudyStackModulesTest {
     }
 
     @Test
-    void keepsBusinessModulesFreeOfImplementationTypes() throws IOException {
-        for (String module : BUSINESS_MODULES) {
+    void keepsUnimplementedBusinessModulesFreeOfImplementationTypes() throws IOException {
+        for (String module : EMPTY_BUSINESS_MODULES) {
             assertEquals(Set.of("package-info.java"), javaFilesBelow(MAIN_PACKAGE.resolve(module)),
-                    module + " must only declare its P0 module boundary");
+                    module + " must remain an unimplemented module boundary");
         }
     }
 

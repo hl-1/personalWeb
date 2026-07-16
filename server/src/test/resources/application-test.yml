@@ -3,6 +3,20 @@ spring:
     name: studystack
   main:
     banner-mode: "off"
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: EXAMPLE_ONLY_GITHUB_CLIENT_ID
+            client-secret: EXAMPLE_ONLY_GITHUB_CLIENT_SECRET
+
+studystack:
+  identity:
+    security:
+      admin-github-ids: ""
+      cookie:
+        secure: false
 
 springdoc:
   api-docs:
