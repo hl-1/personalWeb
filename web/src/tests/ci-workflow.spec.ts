@@ -124,7 +124,8 @@ describe('CI quality gates', () => {
     expect(e2eCommands).toContain(
       'docker compose --env-file .env.example -f deploy/compose.yml up -d --build --wait',
     )
-    expect(e2eCommands).toContain('pnpm test:e2e -- foundation-routing.spec.ts')
+    expect(e2eCommands).toContain('pnpm test:e2e')
+    expect(e2eCommands).not.toContain('pnpm test:e2e -- foundation-routing.spec.ts')
     expect(e2eCommands).toContain(
       'docker compose --env-file .env.example -f deploy/compose.yml down --volumes',
     )

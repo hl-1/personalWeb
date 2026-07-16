@@ -1,8 +1,22 @@
 spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
   datasource:
     url: jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
+
+studystack:
+  identity:
+    security:
+      admin-github-ids: ${STUDYSTACK_ADMIN_GITHUB_IDS}
+      cookie:
+        secure: true
 
 springdoc:
   api-docs:

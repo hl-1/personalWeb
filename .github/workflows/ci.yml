@@ -126,7 +126,7 @@ jobs:
         run: docker compose --env-file .env.example -f deploy/compose.yml up -d --build --wait
       - name: Test Caddy routing
         working-directory: web
-        run: pnpm test:e2e -- foundation-routing.spec.ts
+        run: pnpm test:e2e
       - name: Clean up application topology
         if: always()
         run: docker compose --env-file .env.example -f deploy/compose.yml down --volumes

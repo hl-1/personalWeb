@@ -17,6 +17,9 @@ import org.springframework.test.context.ActiveProfiles;
         properties = {
                 OpenApiDevelopmentIntegrationTest.DATABASE_AUTO_CONFIGURATION_EXCLUSIONS,
                 "DB_PASSWORD=local-test-password",
+                "GITHUB_CLIENT_ID=EXAMPLE_ONLY_GITHUB_CLIENT_ID",
+                "GITHUB_CLIENT_SECRET=EXAMPLE_ONLY_GITHUB_CLIENT_SECRET",
+                "STUDYSTACK_ADMIN_GITHUB_IDS=101",
                 "management.endpoint.health.validate-group-membership=false"
         })
 class OpenApiProductionIntegrationTest {

@@ -51,6 +51,21 @@ test('Caddy mounts its config and only Caddy publishes an HTTP port', () => {
   assert.equal(config.services.caddy.ports.length, 1)
 })
 
+test('identity secrets are passed only to the backend application', () => {
+  const config = readComposeConfig()
+  const appEnvironment = config.services.app.environment
+  const webBuildArgs = config.services.caddy.build.args ?? {}
+
+  assert.equal(appEnvironment.GITHUB_CLIENT_ID, 'EXAMPLE_ONLY_GITHUB_CLIENT_ID')
+  assert.equal(appEnvironment.GITHUB_CLIENT_SECRET, 'EXAMPLE_ONLY_GITHUB_CLIENT_SECRET')
+  assert.equal(appEnvironment.STUDYSTACK_ADMIN_GITHUB_IDS, '')
+  assert.deepEqual(Object.keys(webBuildArgs), ['VITE_API_BASE_URL'])
+
+  const webConfiguration = JSON.stringify(config.services.caddy)
+  assert.doesNotMatch(webConfiguration, /GITHUB_CLIENT_(?:ID|SECRET)/)
+  assert.doesNotMatch(webConfiguration, /STUDYSTACK_ADMIN_GITHUB_IDS/)
+})
+
 test('Caddy preserves actuator rejection, backend proxy, then SPA fallback order', () => {
   assert.ok(existsSync(caddyfilePath), `missing Caddyfile: ${caddyfilePath}`)
   const caddyfile = readFileSync(caddyfilePath, 'utf8')

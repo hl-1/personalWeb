@@ -53,7 +53,7 @@ class OpenApiDevelopmentIntegrationTest {
 
         assertTrue(document.path("openapi").asText().startsWith("3."));
         assertEquals("StudyStack API", document.path("info").path("title").asText());
-        assertEquals("P0", document.path("info").path("version").asText());
+        assertEquals("P1", document.path("info").path("version").asText());
         assertTrue(document.path("paths").isObject());
 
         ResponseEntity<String> swaggerUi =

@@ -1,8 +1,37 @@
 import { mount, type VueWrapper } from '@vue/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
-import { createMemoryHistory } from 'vue-router'
-import App from '../App.vue'
-import { createStudyStackRouter } from './index'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { RouterView, createMemoryHistory } from 'vue-router'
+import type { AuthState } from '../features/auth/auth-schema'
+import { createStudyStackRouter, type AuthRouteAccess } from './index'
+
+const RouteHost = {
+  components: { RouterView },
+  template: '<RouterView />',
+}
+
+const anonymousState: AuthState = { authenticated: false, user: null }
+
+function authenticatedState(roles: ('USER' | 'ADMIN')[]): AuthState {
+  return {
+    authenticated: true,
+    user: {
+      id: '2d65e30a-f450-4f8e-8ed9-5f36b2f7c322',
+      login: 'octocat',
+      displayName: 'The Octocat',
+      avatarUrl: null,
+      roles,
+    },
+  }
+}
+
+function routeAccess(state: AuthState, returnTo = '/'): AuthRouteAccess {
+  return {
+    current: vi.fn().mockResolvedValue(state),
+    refresh: vi.fn().mockResolvedValue(state),
+    remember: vi.fn(),
+    consume: vi.fn().mockReturnValue(returnTo),
+  }
+}
 
 describe('StudyStack routes', () => {
   let wrapper: VueWrapper | undefined
@@ -16,12 +45,74 @@ describe('StudyStack routes', () => {
     ['/foundation', 'foundation-view', 'StudyStack foundation'],
     ['/unknown-page', 'not-found-view', 'Page not found'],
   ])('renders %s with a stable marker', async (path, marker, text) => {
-    const router = createStudyStackRouter(createMemoryHistory())
+    const router = createStudyStackRouter(createMemoryHistory(), routeAccess(anonymousState))
     await router.push(path)
     await router.isReady()
 
-    wrapper = mount(App, { global: { plugins: [router] } })
+    wrapper = mount(RouteHost, { global: { plugins: [router] } })
 
     expect(wrapper.get(`[data-testid="${marker}"]`).text()).toContain(text)
+  })
+
+  it.each([
+    ['/login', 'login-view', 'Sign in'],
+    ['/forbidden', 'forbidden-view', 'Access denied'],
+  ])('renders the identity route %s', async (path, marker, text) => {
+    const router = createStudyStackRouter(createMemoryHistory(), routeAccess(anonymousState))
+    await router.push(path)
+    await router.isReady()
+
+    wrapper = mount(RouteHost, { global: { plugins: [router] } })
+
+    expect(wrapper.get(`[data-testid="${marker}"]`).text()).toContain(text)
+  })
+
+  it('sends an anonymous admin visitor to login and remembers the path', async () => {
+    const access = routeAccess(anonymousState)
+    const router = createStudyStackRouter(createMemoryHistory(), access)
+
+    await router.push('/admin')
+    await router.isReady()
+
+    expect(router.currentRoute.value.name).toBe('login')
+    expect(access.remember).toHaveBeenCalledWith('/admin')
+  })
+
+  it('sends an authenticated non-admin user to forbidden', async () => {
+    const router = createStudyStackRouter(
+      createMemoryHistory(),
+      routeAccess(authenticatedState(['USER'])),
+    )
+
+    await router.push('/admin')
+    await router.isReady()
+
+    expect(router.currentRoute.value.name).toBe('forbidden')
+  })
+
+  it('allows an authenticated admin to enter the admin placeholder', async () => {
+    const router = createStudyStackRouter(
+      createMemoryHistory(),
+      routeAccess(authenticatedState(['USER', 'ADMIN'])),
+    )
+
+    await router.push('/admin')
+    await router.isReady()
+
+    wrapper = mount(RouteHost, { global: { plugins: [router] } })
+    expect(router.currentRoute.value.name).toBe('admin')
+    expect(wrapper.get('[data-testid="admin-view"]').text()).toContain('Admin')
+  })
+
+  it('refreshes auth state after login success and consumes the saved path', async () => {
+    const access = routeAccess(authenticatedState(['USER', 'ADMIN']), '/admin')
+    const router = createStudyStackRouter(createMemoryHistory(), access)
+
+    await router.push('/login?status=success')
+    await router.isReady()
+
+    expect(access.refresh).toHaveBeenCalledTimes(1)
+    expect(access.consume).toHaveBeenCalledTimes(1)
+    expect(router.currentRoute.value.fullPath).toBe('/admin')
   })
 })
