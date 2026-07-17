@@ -44,6 +44,23 @@ class IdentitySecurityPropertiesTest {
     }
 
     @Test
+    void developmentProfileAcceptsInjectedOAuthCredentials() {
+        try (ConfigurableApplicationContext context = start(
+                "dev",
+                "--GITHUB_CLIENT_ID=local-github-client-id",
+                "--GITHUB_CLIENT_SECRET=local-github-client-secret")) {
+            Environment environment = context.getEnvironment();
+
+            assertEquals(
+                    "local-github-client-id",
+                    environment.getProperty(OAUTH_PREFIX + "client-id"));
+            assertEquals(
+                    "local-github-client-secret",
+                    environment.getProperty(OAUTH_PREFIX + "client-secret"));
+        }
+    }
+
+    @Test
     void productionProfileBindsOnlyInjectedOAuthAndAdminValues() {
         try (ConfigurableApplicationContext context = start(
                 "prod",

@@ -1,3 +1,4 @@
+import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { RouterView, createMemoryHistory } from 'vue-router'
@@ -42,6 +43,11 @@ describe('StudyStack routes', () => {
 
   it.each([
     ['/', 'home-view', 'StudyStack'],
+    ['/about', 'about-view', 'About'],
+    ['/blog', 'blog-list-view', 'Blog'],
+    ['/blog/public-article', 'article-detail-view', 'article'],
+    ['/projects', 'project-list-view', 'Projects'],
+    ['/projects/public-project', 'project-detail-view', 'Project'],
     ['/foundation', 'foundation-view', 'StudyStack foundation'],
     ['/unknown-page', 'not-found-view', 'Page not found'],
   ])('renders %s with a stable marker', async (path, marker, text) => {
@@ -49,7 +55,9 @@ describe('StudyStack routes', () => {
     await router.push(path)
     await router.isReady()
 
-    wrapper = mount(RouteHost, { global: { plugins: [router] } })
+    wrapper = mount(RouteHost, {
+      global: { plugins: [router, [VueQueryPlugin, { queryClient: new QueryClient() }]] },
+    })
 
     expect(wrapper.get(`[data-testid="${marker}"]`).text()).toContain(text)
   })
@@ -62,7 +70,9 @@ describe('StudyStack routes', () => {
     await router.push(path)
     await router.isReady()
 
-    wrapper = mount(RouteHost, { global: { plugins: [router] } })
+    wrapper = mount(RouteHost, {
+      global: { plugins: [router, [VueQueryPlugin, { queryClient: new QueryClient() }]] },
+    })
 
     expect(wrapper.get(`[data-testid="${marker}"]`).text()).toContain(text)
   })
@@ -99,7 +109,9 @@ describe('StudyStack routes', () => {
     await router.push('/admin')
     await router.isReady()
 
-    wrapper = mount(RouteHost, { global: { plugins: [router] } })
+    wrapper = mount(RouteHost, {
+      global: { plugins: [router, [VueQueryPlugin, { queryClient: new QueryClient() }]] },
+    })
     expect(router.currentRoute.value.name).toBe('admin')
     expect(wrapper.get('[data-testid="admin-view"]').text()).toContain('Admin')
   })

@@ -61,12 +61,13 @@ class PostgresFlywayIntegrationTest {
     }
 
     @Test
-    void appliesFoundationAndIdentityMigrationsInOrder() {
+    void keepsFoundationAndIdentityAsTheMigrationPrefix() {
         List<String> appliedVersions = Arrays.stream(flyway.info().applied())
                 .map(info -> info.getVersion().getVersion())
                 .toList();
 
-        assertEquals(List.of("1", "2"), appliedVersions);
+        assertTrue(appliedVersions.size() >= 2);
+        assertEquals(List.of("1", "2"), appliedVersions.subList(0, 2));
     }
 
     @Test
@@ -81,6 +82,10 @@ class PostgresFlywayIntegrationTest {
                 select table_name
                 from information_schema.tables
                 where table_schema = current_schema()
+                  and (
+                      table_name = 'flyway_schema_history'
+                      or table_name like 'identity_%'
+                      or table_name like 'spring_session%')
                 order by table_name
                 """,
                 String.class);

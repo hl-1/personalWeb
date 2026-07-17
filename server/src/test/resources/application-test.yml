@@ -12,6 +12,7 @@ spring:
             client-secret: EXAMPLE_ONLY_GITHUB_CLIENT_SECRET
 
 studystack:
+  public-base-url: https://example.com
   identity:
     security:
       admin-github-ids: ""

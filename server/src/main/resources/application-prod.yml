@@ -12,6 +12,7 @@ spring:
     password: ${DB_PASSWORD}
 
 studystack:
+  public-base-url: ${STUDYSTACK_PUBLIC_BASE_URL}
   identity:
     security:
       admin-github-ids: ${STUDYSTACK_ADMIN_GITHUB_IDS}

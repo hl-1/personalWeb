@@ -8,6 +8,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.studystack.content.application.PublicArticleQuery;
+import com.studystack.content.infrastructure.seo.ContentSitemapContributor;
+import com.studystack.portfolio.application.PublicPortfolioQuery;
+import com.studystack.portfolio.infrastructure.seo.PortfolioSitemapContributor;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,6 +24,7 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @ActiveProfiles("test")
 @SpringBootTest(
@@ -42,6 +47,18 @@ class OpenApiDevelopmentIntegrationTest {
     @Autowired
     ObjectMapper objectMapper;
 
+    @MockitoBean
+    PublicArticleQuery publicArticleQuery;
+
+    @MockitoBean
+    PublicPortfolioQuery publicPortfolioQuery;
+
+    @MockitoBean
+    ContentSitemapContributor contentSitemapContributor;
+
+    @MockitoBean
+    PortfolioSitemapContributor portfolioSitemapContributor;
+
     @Test
     void exposesOpenApiThreeAndSwaggerUiAndWritesCanonicalContract() throws Exception {
         ResponseEntity<String> response = restTemplate.getForEntity("/v3/api-docs", String.class);
@@ -53,7 +70,7 @@ class OpenApiDevelopmentIntegrationTest {
 
         assertTrue(document.path("openapi").asText().startsWith("3."));
         assertEquals("StudyStack API", document.path("info").path("title").asText());
-        assertEquals("P1", document.path("info").path("version").asText());
+        assertEquals("P2", document.path("info").path("version").asText());
         assertTrue(document.path("paths").isObject());
 
         ResponseEntity<String> swaggerUi =
