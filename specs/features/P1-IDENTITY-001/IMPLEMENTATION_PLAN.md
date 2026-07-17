@@ -2,9 +2,11 @@
 task_id: P1-IDENTITY-001
 title: StudyStack 身份与权限
 phase: P1
-status: draft
+status: awaiting-user-acceptance
 created: 2026-07-16
-updated: 2026-07-16
+updated: 2026-07-17
+product_ref: specs/features/P1-IDENTITY-001/PRODUCT.md
+tech_ref: specs/features/P1-IDENTITY-001/TECH.md
 design_refs:
   - C:/softWare/project/workDoc/java-personal-website-design.md
   - docs/AI-PROJECT-DELIVERY-PLAN.md
