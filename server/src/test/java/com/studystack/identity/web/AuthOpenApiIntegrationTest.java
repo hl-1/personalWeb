@@ -8,6 +8,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.studystack.content.application.PublicArticleQuery;
+import com.studystack.content.infrastructure.seo.ContentSitemapContributor;
+import com.studystack.portfolio.application.PublicPortfolioQuery;
+import com.studystack.portfolio.infrastructure.seo.PortfolioSitemapContributor;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -16,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @ActiveProfiles("test")
@@ -32,8 +37,20 @@ class AuthOpenApiIntegrationTest {
     @Autowired
     ObjectMapper objectMapper;
 
+    @MockitoBean
+    PublicArticleQuery publicArticleQuery;
+
+    @MockitoBean
+    PublicPortfolioQuery publicPortfolioQuery;
+
+    @MockitoBean
+    ContentSitemapContributor contentSitemapContributor;
+
+    @MockitoBean
+    PortfolioSitemapContributor portfolioSitemapContributor;
+
     @Test
-    void documentsP1AuthenticationPathsResponsesSchemasAndSessionCookie() throws Exception {
+    void documentsAuthenticationPathsResponsesSchemasAndSessionCookieInP2() throws Exception {
         String body = mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
                 .andReturn()
@@ -41,7 +58,7 @@ class AuthOpenApiIntegrationTest {
                 .getContentAsString();
         JsonNode document = objectMapper.readTree(body);
 
-        assertEquals("P1", document.at("/info/version").asText());
+        assertEquals("P2", document.at("/info/version").asText());
         assertResponse(document, "/api/v1/auth/me", "get", "200");
         assertResponse(document, "/api/v1/auth/csrf", "get", "200");
         assertResponse(document, "/api/v1/auth/logout", "post", "204");

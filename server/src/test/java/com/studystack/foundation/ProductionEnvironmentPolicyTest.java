@@ -53,6 +53,7 @@ class ProductionEnvironmentPolicyTest {
             properties.put("DB_PASSWORD", password);
         }
         properties.put("spring.main.banner-mode", "off");
+        properties.put("spring.main.lazy-initialization", "true");
         properties.put("logging.level.root", "OFF");
         properties.put("management.endpoint.health.validate-group-membership", "false");
         properties.put(

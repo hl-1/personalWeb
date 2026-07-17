@@ -4,6 +4,40 @@
  */
 
 export interface paths {
+    "/api/v1/articles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List published articles */
+        get: operations["articles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/articles/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a published article */
+        get: operations["article"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/csrf": {
         parameters: {
             query?: never;
@@ -55,10 +89,173 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List public article categories */
+        get: operations["categories"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portfolio/experiences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List visible portfolio experiences */
+        get: operations["experiences"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portfolio/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the public portfolio profile */
+        get: operations["profile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portfolio/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List published portfolio projects */
+        get: operations["projects"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portfolio/projects/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a published portfolio project */
+        get: operations["project"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portfolio/skills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List visible portfolio skills */
+        get: operations["skills"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List public article tags */
+        get: operations["tags"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description Public article detail with sanitized HTML */
+        ArticleDetailResponse: {
+            canonicalPath: string;
+            category: string | null;
+            contentHtml: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            publishedAt: string;
+            seoDescription: string | null;
+            seoTitle: string | null;
+            slug: string;
+            summary: string;
+            tags: string[];
+            title: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /** @description Zero-based public article page */
+        ArticlePageResponse: {
+            items: components["schemas"]["ArticleSummaryResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            size: number;
+            /** Format: int64 */
+            totalElements: number;
+            /** Format: int32 */
+            totalPages: number;
+        };
+        /** @description Public article summary */
+        ArticleSummaryResponse: {
+            category: string | null;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            publishedAt: string;
+            slug: string;
+            summary: string;
+            tags: string[];
+            title: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
         /** @description Current StudyStack authentication state */
         AuthStateResponse: {
             authenticated: boolean;
@@ -80,6 +277,89 @@ export interface components {
             headerName: string;
             token: string;
         };
+        ExperienceResponse: {
+            /** Format: date */
+            endDate: string | null;
+            /** Format: uuid */
+            id: string;
+            organization: string;
+            role: string;
+            /** Format: date */
+            startDate: string;
+            summaryHtml: string;
+        };
+        PortfolioProfileResponse: {
+            bioHtml: string;
+            displayName: string;
+            headline: string;
+            seoDescription: string | null;
+        };
+        ProjectDetailResponse: {
+            canonicalPath: string;
+            descriptionHtml: string;
+            featured: boolean;
+            /** Format: uuid */
+            id: string;
+            projectUrl: string | null;
+            /** Format: date-time */
+            publishedAt: string;
+            repositoryUrl: string | null;
+            slug: string;
+            summary: string;
+            title: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /** @description Zero-based public project page */
+        ProjectPageResponse: {
+            items: components["schemas"]["ProjectSummaryResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            size: number;
+            /** Format: int64 */
+            totalElements: number;
+            /** Format: int32 */
+            totalPages: number;
+        };
+        ProjectSummaryResponse: {
+            featured: boolean;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            publishedAt: string;
+            slug: string;
+            summary: string;
+            title: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        /** @description Sanitized public API problem response */
+        PublicProblemResponse: {
+            code: string;
+            detail: string;
+            /** Format: uri */
+            instance: string;
+            /** Format: int32 */
+            status: number;
+            title: string;
+            /** Format: uri */
+            type: string;
+        };
+        SkillResponse: {
+            category: string;
+            /** Format: uuid */
+            id: string;
+            name: string;
+            summary: string | null;
+        };
+        /** @description Public taxonomy with its currently published article count */
+        TaxonomyResponse: {
+            name: string;
+            /** Format: int64 */
+            publishedArticleCount: number;
+            slug: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -89,6 +369,71 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    articles: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+                category?: string;
+                tag?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Published article page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArticlePageResponse"];
+                };
+            };
+            /** @description Invalid pagination or taxonomy filter */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["PublicProblemResponse"];
+                };
+            };
+        };
+    };
+    article: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Published article detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArticleDetailResponse"];
+                };
+            };
+            /** @description Article is unavailable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["PublicProblemResponse"];
+                };
+            };
+        };
+    };
     csrf: {
         parameters: {
             query?: never;
@@ -150,6 +495,179 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["AuthStateResponse"];
+                };
+            };
+        };
+    };
+    categories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Categories used by published articles */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaxonomyResponse"][];
+                };
+            };
+        };
+    };
+    experiences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Visible experiences */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ExperienceResponse"][];
+                };
+            };
+        };
+    };
+    profile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Public profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PortfolioProfileResponse"];
+                };
+            };
+            /** @description Profile is unavailable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["PublicProblemResponse"];
+                };
+            };
+        };
+    };
+    projects: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+                featured?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Published project page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ProjectPageResponse"];
+                };
+            };
+            /** @description Invalid pagination */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["PublicProblemResponse"];
+                };
+            };
+        };
+    };
+    project: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Published project detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ProjectDetailResponse"];
+                };
+            };
+            /** @description Project is unavailable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["PublicProblemResponse"];
+                };
+            };
+        };
+    };
+    skills: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Visible skills */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SkillResponse"][];
+                };
+            };
+        };
+    };
+    tags: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tags used by published articles */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaxonomyResponse"][];
                 };
             };
         };

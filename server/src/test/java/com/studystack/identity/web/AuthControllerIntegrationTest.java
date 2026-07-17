@@ -13,7 +13,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.studystack.content.application.PublicArticleQuery;
+import com.studystack.content.infrastructure.seo.ContentSitemapContributor;
 import com.studystack.identity.infrastructure.security.StudyStackPrincipal;
+import com.studystack.portfolio.application.PublicPortfolioQuery;
+import com.studystack.portfolio.infrastructure.seo.PortfolioSitemapContributor;
 import jakarta.servlet.http.Cookie;
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +29,7 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -52,6 +57,18 @@ class AuthControllerIntegrationTest {
 
     @Autowired
     ObjectMapper objectMapper;
+
+    @MockitoBean
+    PublicArticleQuery publicArticleQuery;
+
+    @MockitoBean
+    PublicPortfolioQuery publicPortfolioQuery;
+
+    @MockitoBean
+    ContentSitemapContributor contentSitemapContributor;
+
+    @MockitoBean
+    PortfolioSitemapContributor portfolioSitemapContributor;
 
     @Test
     void anonymousCurrentUserReturnsDiscriminatedState() throws Exception {

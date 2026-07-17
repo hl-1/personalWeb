@@ -3,6 +3,8 @@ import { createRouter, createWebHistory, type RouterHistory } from 'vue-router'
 import type { AuthClient } from '../features/auth/auth-client'
 import { authQueryKey, createAuthQueryOptions } from '../features/auth/auth-query'
 import type { AuthState } from '../features/auth/auth-schema'
+import { createContentClient } from '../features/content/content-client'
+import { createPortfolioClient } from '../features/portfolio/portfolio-client'
 import {
   consumeReturnTo,
   rememberReturnTo,
@@ -10,10 +12,18 @@ import {
 } from '../features/auth/return-to'
 import FoundationView from '../views/FoundationView.vue'
 import HomeView from '../views/HomeView.vue'
+import AboutView from '../views/AboutView.vue'
+import BlogListView from '../views/BlogListView.vue'
+import ArticleDetailView from '../views/ArticleDetailView.vue'
+import ProjectListView from '../views/ProjectListView.vue'
+import ProjectDetailView from '../views/ProjectDetailView.vue'
 import AdminView from '../views/AdminView.vue'
 import ForbiddenView from '../views/ForbiddenView.vue'
 import LoginView from '../views/LoginView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
+
+const contentClient = createContentClient({ apiBaseUrl: '/api' })
+const portfolioClient = createPortfolioClient({ apiBaseUrl: '/api' })
 
 export interface AuthRouteAccess {
   current(): Promise<AuthState>
@@ -49,6 +59,37 @@ export function createStudyStackRouter(
         path: '/',
         name: 'home',
         component: HomeView,
+        props: { contentClient, portfolioClient },
+      },
+      {
+        path: '/about',
+        name: 'about',
+        component: AboutView,
+        props: { portfolioClient },
+      },
+      {
+        path: '/blog',
+        name: 'blog',
+        component: BlogListView,
+        props: { contentClient },
+      },
+      {
+        path: '/blog/:slug',
+        name: 'article-detail',
+        component: ArticleDetailView,
+        props: (route) => ({ contentClient, slug: String(route.params.slug) }),
+      },
+      {
+        path: '/projects',
+        name: 'projects',
+        component: ProjectListView,
+        props: { portfolioClient },
+      },
+      {
+        path: '/projects/:slug',
+        name: 'project-detail',
+        component: ProjectDetailView,
+        props: (route) => ({ portfolioClient, slug: String(route.params.slug) }),
       },
       {
         path: '/foundation',

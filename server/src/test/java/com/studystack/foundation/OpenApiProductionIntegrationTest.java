@@ -2,6 +2,10 @@ package com.studystack.foundation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.studystack.content.application.PublicArticleQuery;
+import com.studystack.content.infrastructure.seo.ContentSitemapContributor;
+import com.studystack.portfolio.application.PublicPortfolioQuery;
+import com.studystack.portfolio.infrastructure.seo.PortfolioSitemapContributor;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +14,7 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @ActiveProfiles("prod")
 @SpringBootTest(
@@ -20,12 +25,25 @@ import org.springframework.test.context.ActiveProfiles;
                 "GITHUB_CLIENT_ID=EXAMPLE_ONLY_GITHUB_CLIENT_ID",
                 "GITHUB_CLIENT_SECRET=EXAMPLE_ONLY_GITHUB_CLIENT_SECRET",
                 "STUDYSTACK_ADMIN_GITHUB_IDS=101",
+                "STUDYSTACK_PUBLIC_BASE_URL=https://example.com",
                 "management.endpoint.health.validate-group-membership=false"
         })
 class OpenApiProductionIntegrationTest {
 
     @Autowired
     TestRestTemplate restTemplate;
+
+    @MockitoBean
+    PublicArticleQuery publicArticleQuery;
+
+    @MockitoBean
+    PublicPortfolioQuery publicPortfolioQuery;
+
+    @MockitoBean
+    ContentSitemapContributor contentSitemapContributor;
+
+    @MockitoBean
+    PortfolioSitemapContributor portfolioSitemapContributor;
 
     @Test
     void doesNotExposeOpenApiOrSwaggerUi() {
