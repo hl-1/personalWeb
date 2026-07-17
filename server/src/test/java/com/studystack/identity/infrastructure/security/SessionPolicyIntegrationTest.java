@@ -312,6 +312,7 @@ class SessionPolicyIntegrationTest {
             arguments.add("--GITHUB_CLIENT_ID=EXAMPLE_ONLY_PROD_GITHUB_CLIENT_ID");
             arguments.add("--GITHUB_CLIENT_SECRET=EXAMPLE_ONLY_PROD_GITHUB_CLIENT_SECRET");
             arguments.add("--STUDYSTACK_ADMIN_GITHUB_IDS=70002");
+            arguments.add("--STUDYSTACK_PUBLIC_BASE_URL=https://example.com");
         }
         return new SpringApplicationBuilder(
                         StudyStackApplication.class,

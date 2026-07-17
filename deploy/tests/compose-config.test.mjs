@@ -9,6 +9,10 @@ const projectRoot = fileURLToPath(new URL('../..', import.meta.url))
 const composePath = resolve(projectRoot, 'deploy', 'compose.yml')
 const envPath = resolve(projectRoot, '.env.example')
 const caddyfilePath = resolve(projectRoot, 'deploy', 'Caddyfile')
+const applicationPath = resolve(projectRoot, 'server', 'src', 'main', 'resources', 'application.yml')
+const developmentPath = resolve(projectRoot, 'server', 'src', 'main', 'resources', 'application-dev.yml')
+const productionPath = resolve(projectRoot, 'server', 'src', 'main', 'resources', 'application-prod.yml')
+const testPath = resolve(projectRoot, 'server', 'src', 'test', 'resources', 'application-test.yml')
 const serverDockerfilePath = resolve(projectRoot, 'server', 'Dockerfile')
 const webDockerfilePath = resolve(projectRoot, 'web', 'Dockerfile')
 
@@ -66,11 +70,31 @@ test('identity secrets are passed only to the backend application', () => {
   assert.doesNotMatch(webConfiguration, /STUDYSTACK_ADMIN_GITHUB_IDS/)
 })
 
+test('public base URL is explicit per environment and passed only to the application', () => {
+  const config = readComposeConfig()
+  const environmentExample = readFileSync(envPath, 'utf8')
+  const application = readFileSync(applicationPath, 'utf8')
+  const development = readFileSync(developmentPath, 'utf8')
+  const production = readFileSync(productionPath, 'utf8')
+  const testConfiguration = readFileSync(testPath, 'utf8')
+
+  assert.match(environmentExample, /^STUDYSTACK_PUBLIC_BASE_URL=http:\/\/localhost:\d+$/m)
+  assert.match(application, /public-base-url: \$\{STUDYSTACK_PUBLIC_BASE_URL\}/)
+  assert.match(development, /public-base-url: \$\{STUDYSTACK_PUBLIC_BASE_URL:http:\/\/localhost:5173\}/)
+  assert.match(production, /public-base-url: \$\{STUDYSTACK_PUBLIC_BASE_URL\}/)
+  assert.doesNotMatch(production, /STUDYSTACK_PUBLIC_BASE_URL:[^}]+/)
+  assert.match(testConfiguration, /public-base-url: https:\/\/example\.com/)
+  assert.equal(config.services.app.environment.STUDYSTACK_PUBLIC_BASE_URL, 'http://localhost:8080')
+  assert.doesNotMatch(JSON.stringify(config.services.caddy), /STUDYSTACK_PUBLIC_BASE_URL/)
+  assert.doesNotMatch(environmentExample, /(?:BEGIN [A-Z ]+PRIVATE KEY|gh[opsu]_[A-Za-z0-9]{20,})/)
+})
+
 test('Caddy preserves actuator rejection, backend proxy, then SPA fallback order', () => {
   assert.ok(existsSync(caddyfilePath), `missing Caddyfile: ${caddyfilePath}`)
   const caddyfile = readFileSync(caddyfilePath, 'utf8')
   const actuator = caddyfile.indexOf('@actuator')
   const backend = caddyfile.indexOf('@backend')
+  const publicDocuments = caddyfile.indexOf('@publicDocuments')
   const fallback = caddyfile.indexOf('try_files')
 
   assert.match(caddyfile, /path \/actuator \/actuator\/\*/)
@@ -79,7 +103,11 @@ test('Caddy preserves actuator rejection, backend proxy, then SPA fallback order
     /path \/api \/api\/\* \/oauth2 \/oauth2\/\* \/login\/oauth2 \/login\/oauth2\/\*/,
   )
   assert.match(caddyfile, /reverse_proxy @backend app:8080/)
-  assert.ok(actuator >= 0 && actuator < backend && backend < fallback)
+  assert.match(caddyfile, /@publicDocuments path \/sitemap\.xml \/robots\.txt/)
+  assert.match(caddyfile, /reverse_proxy @publicDocuments app:8080/)
+  assert.ok(
+    actuator >= 0 && actuator < backend && backend < publicDocuments && publicDocuments < fallback,
+  )
 })
 
 test('runtime image stages contain only runtime artifacts', () => {

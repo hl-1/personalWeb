@@ -11,8 +11,8 @@ import org.springframework.context.annotation.Configuration;
 @OpenAPIDefinition(
         info = @Info(
                 title = "StudyStack API",
-                version = "P1",
-                description = "StudyStack P1 identity API contract"))
+                version = "P2",
+                description = "StudyStack P2 public content and identity API contract"))
 @SecurityScheme(
         name = OpenApiConfiguration.SESSION_COOKIE_SECURITY_SCHEME,
         type = SecuritySchemeType.APIKEY,

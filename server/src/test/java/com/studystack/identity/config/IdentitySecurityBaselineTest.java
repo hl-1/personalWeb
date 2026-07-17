@@ -5,6 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.studystack.content.application.PublicArticleQuery;
+import com.studystack.content.infrastructure.seo.ContentSitemapContributor;
+import com.studystack.portfolio.application.PublicPortfolioQuery;
+import com.studystack.portfolio.infrastructure.seo.PortfolioSitemapContributor;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +30,7 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.header.HeaderWriterFilter;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -51,6 +56,18 @@ class IdentitySecurityBaselineTest {
 
     @Autowired
     SecurityFilterChain securityFilterChain;
+
+    @MockitoBean
+    PublicArticleQuery publicArticleQuery;
+
+    @MockitoBean
+    PublicPortfolioQuery publicPortfolioQuery;
+
+    @MockitoBean
+    ContentSitemapContributor contentSitemapContributor;
+
+    @MockitoBean
+    PortfolioSitemapContributor portfolioSitemapContributor;
 
     @Test
     void declaresApprovedSecurityDependencies() throws Exception {

@@ -6,6 +6,9 @@
         @backend path /api /api/* /oauth2 /oauth2/* /login/oauth2 /login/oauth2/*
         reverse_proxy @backend app:8080
 
+        @publicDocuments path /sitemap.xml /robots.txt
+        reverse_proxy @publicDocuments app:8080
+
         root * /srv
         try_files {path} /index.html
         file_server

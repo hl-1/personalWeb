@@ -37,6 +37,7 @@ server:
         secure: ${studystack.identity.security.cookie.secure}
 
 studystack:
+  public-base-url: ${STUDYSTACK_PUBLIC_BASE_URL}
   identity:
     security:
       session-timeout: 24h
