@@ -17,6 +17,50 @@ public interface CategoryRepository extends Repository<Category, UUID> {
 
     Optional<Category> findBySlug(Slug slug);
 
+    Optional<Category> findByName(String name);
+
+    void delete(Category category);
+
+    void flush();
+
+    @Query(value = """
+            select c.id as id,
+                   c.name as name,
+                   c.slug as slug,
+                   count(a.id) as "articleCount",
+                   c.created_at as "createdAt",
+                   c.updated_at as "updatedAt",
+                   c.version as version
+            from content_category c
+            left join content_article a on a.category_id = c.id
+            group by c.id, c.name, c.slug, c.created_at, c.updated_at, c.version
+            order by c.name asc, c.id asc
+            """, nativeQuery = true)
+    List<AdminCategory> findAdminCategories();
+
+    @Query("select c from Category c where c.id = :id")
+    Optional<Category> findByIdForDeletion(@Param("id") UUID id);
+
+    @Query(value = "select count(*) from content_article where category_id = :id", nativeQuery = true)
+    long countArticleReferences(@Param("id") UUID id);
+
+    interface AdminCategory {
+
+        UUID getId();
+
+        String getName();
+
+        String getSlug();
+
+        long getArticleCount();
+
+        Instant getCreatedAt();
+
+        Instant getUpdatedAt();
+
+        long getVersion();
+    }
+
     @Query(value = """
             select c.name as name,
                    c.slug as slug,

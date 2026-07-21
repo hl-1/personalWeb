@@ -2,9 +2,16 @@ package com.studystack.foundation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.studystack.admin.domain.AdminAuditRepository;
 import com.studystack.content.application.PublicArticleQuery;
+import com.studystack.content.application.admin.ArticleAdminService;
+import com.studystack.content.application.admin.TaxonomyAdminService;
 import com.studystack.content.infrastructure.seo.ContentSitemapContributor;
 import com.studystack.portfolio.application.PublicPortfolioQuery;
+import com.studystack.portfolio.application.admin.ExperienceAdminService;
+import com.studystack.portfolio.application.admin.ProfileAdminService;
+import com.studystack.portfolio.application.admin.ProjectAdminService;
+import com.studystack.portfolio.application.admin.SkillAdminService;
 import com.studystack.portfolio.infrastructure.seo.PortfolioSitemapContributor;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -44,6 +51,27 @@ class OpenApiProductionIntegrationTest {
 
     @MockitoBean
     PortfolioSitemapContributor portfolioSitemapContributor;
+
+    @MockitoBean
+    AdminAuditRepository adminAuditRepository;
+
+    @MockitoBean
+    ArticleAdminService articleAdminService;
+
+    @MockitoBean
+    TaxonomyAdminService taxonomyAdminService;
+
+    @MockitoBean
+    ProjectAdminService projectAdminService;
+
+    @MockitoBean
+    ProfileAdminService profileAdminService;
+
+    @MockitoBean
+    SkillAdminService skillAdminService;
+
+    @MockitoBean
+    ExperienceAdminService experienceAdminService;
 
     @Test
     void doesNotExposeOpenApiOrSwaggerUi() {

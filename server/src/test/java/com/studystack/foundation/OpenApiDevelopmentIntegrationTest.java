@@ -8,9 +8,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.studystack.admin.domain.AdminAuditRepository;
 import com.studystack.content.application.PublicArticleQuery;
+import com.studystack.content.application.admin.ArticleAdminService;
+import com.studystack.content.application.admin.TaxonomyAdminService;
 import com.studystack.content.infrastructure.seo.ContentSitemapContributor;
 import com.studystack.portfolio.application.PublicPortfolioQuery;
+import com.studystack.portfolio.application.admin.ExperienceAdminService;
+import com.studystack.portfolio.application.admin.ProfileAdminService;
+import com.studystack.portfolio.application.admin.ProjectAdminService;
+import com.studystack.portfolio.application.admin.SkillAdminService;
 import com.studystack.portfolio.infrastructure.seo.PortfolioSitemapContributor;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -59,6 +66,14 @@ class OpenApiDevelopmentIntegrationTest {
     @MockitoBean
     PortfolioSitemapContributor portfolioSitemapContributor;
 
+    @MockitoBean AdminAuditRepository adminAuditRepository;
+    @MockitoBean ArticleAdminService articleAdminService;
+    @MockitoBean TaxonomyAdminService taxonomyAdminService;
+    @MockitoBean ProjectAdminService projectAdminService;
+    @MockitoBean ProfileAdminService profileAdminService;
+    @MockitoBean SkillAdminService skillAdminService;
+    @MockitoBean ExperienceAdminService experienceAdminService;
+
     @Test
     void exposesOpenApiThreeAndSwaggerUiAndWritesCanonicalContract() throws Exception {
         ResponseEntity<String> response = restTemplate.getForEntity("/v3/api-docs", String.class);
@@ -70,7 +85,7 @@ class OpenApiDevelopmentIntegrationTest {
 
         assertTrue(document.path("openapi").asText().startsWith("3."));
         assertEquals("StudyStack API", document.path("info").path("title").asText());
-        assertEquals("P2", document.path("info").path("version").asText());
+        assertEquals("P3", document.path("info").path("version").asText());
         assertTrue(document.path("paths").isObject());
 
         ResponseEntity<String> swaggerUi =

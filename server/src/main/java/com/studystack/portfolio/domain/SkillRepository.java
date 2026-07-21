@@ -12,6 +12,17 @@ public interface SkillRepository extends Repository<Skill, UUID> {
 
     Optional<Skill> findById(UUID id);
 
+    void delete(Skill skill);
+
+    void flush();
+
+    @Query(value = """
+            select s.*
+            from portfolio_skill s
+            order by s.sort_order asc, s.id asc
+            """, nativeQuery = true)
+    List<Skill> findAdminSkills();
+
     @Query(value = """
             select s.*
             from portfolio_skill s

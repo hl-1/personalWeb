@@ -17,6 +17,45 @@ public interface ArticleRepository extends Repository<Article, UUID> {
 
     Optional<Article> findBySlug(Slug slug);
 
+    void delete(Article article);
+
+    void flush();
+
+    @Query("""
+            select distinct a
+            from Article a
+            left join fetch a.category
+            left join fetch a.tags
+            where a.id = :id
+            """)
+    Optional<Article> findAdminById(@Param("id") UUID id);
+
+    @Query(value = """
+            select a.*
+            from content_article a
+            where (:status is null or a.status = :status)
+              and (:query is null
+                   or lower(a.title) like concat('%', lower(:query), '%')
+                   or lower(a.slug) like concat('%', lower(:query), '%'))
+            order by a.updated_at desc, a.id desc
+            limit :limit offset :offset
+            """, nativeQuery = true)
+    List<Article> findAdminArticles(
+            @Param("status") String status,
+            @Param("query") String query,
+            @Param("limit") int limit,
+            @Param("offset") long offset);
+
+    @Query(value = """
+            select count(*)
+            from content_article a
+            where (:status is null or a.status = :status)
+              and (:query is null
+                   or lower(a.title) like concat('%', lower(:query), '%')
+                   or lower(a.slug) like concat('%', lower(:query), '%'))
+            """, nativeQuery = true)
+    long countAdminArticles(@Param("status") String status, @Param("query") String query);
+
     @Query(value = """
             select a.*
             from content_article a

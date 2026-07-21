@@ -63,6 +63,26 @@ public class Skill {
         this.updatedAt = timestamp;
     }
 
+    public void revise(
+            String name,
+            String category,
+            String summary,
+            int sortOrder,
+            boolean visible,
+            Instant timestamp) {
+        String revisedName = PortfolioFieldRules.requireText(name, 120, "name");
+        String revisedCategory = PortfolioFieldRules.requireText(category, 120, "category");
+        String revisedSummary = PortfolioFieldRules.requireOptionalValue(summary, 500, "summary");
+        int revisedSortOrder = PortfolioFieldRules.requireSortOrder(sortOrder);
+        Instant changedAt = Objects.requireNonNull(timestamp, "timestamp is required");
+        this.name = revisedName;
+        this.category = revisedCategory;
+        this.summary = revisedSummary;
+        this.sortOrder = revisedSortOrder;
+        this.visible = visible;
+        this.updatedAt = changedAt;
+    }
+
     public UUID id() {
         return id;
     }

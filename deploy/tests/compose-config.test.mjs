@@ -70,6 +70,14 @@ test('identity secrets are passed only to the backend application', () => {
   assert.doesNotMatch(webConfiguration, /STUDYSTACK_ADMIN_GITHUB_IDS/)
 })
 
+test('production Compose does not expose a test identity bypass', () => {
+  const config = readComposeConfig()
+  const serialized = JSON.stringify(config)
+
+  assert.doesNotMatch(serialized, /STUDYSTACK_(?:TEST|E2E)_(?:USER|ADMIN|AUTH|IDENTITY)/i)
+  assert.doesNotMatch(serialized, /AUTH_BYPASS|TEST_IDENTITY/i)
+})
+
 test('public base URL is explicit per environment and passed only to the application', () => {
   const config = readComposeConfig()
   const environmentExample = readFileSync(envPath, 'utf8')

@@ -15,7 +15,7 @@ studystack:
   public-base-url: ${STUDYSTACK_PUBLIC_BASE_URL:http://localhost:5173}
   identity:
     security:
-      admin-github-ids: ""
+      admin-github-ids: ${STUDYSTACK_ADMIN_GITHUB_IDS:}
       cookie:
         secure: false
 

@@ -2,10 +2,8 @@ package com.studystack.content.domain;
 
 import com.studystack.shared.slug.Slug;
 import com.studystack.shared.slug.SlugPolicy;
-import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
-import jakarta.persistence.Converter;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -141,13 +139,18 @@ public class Article {
     }
 
     public void publish(Instant timestamp) {
+        publish(timestamp, timestamp);
+    }
+
+    public void publish(Instant publicationTime, Instant timestamp) {
         if (status != ArticleStatus.DRAFT) {
             throw new IllegalStateException("only draft articles can be published");
         }
-        Instant publicationTime = Objects.requireNonNull(timestamp, "timestamp is required");
+        Instant publishedAt = Objects.requireNonNull(publicationTime, "publicationTime is required");
+        Instant changedAt = Objects.requireNonNull(timestamp, "timestamp is required");
         this.status = ArticleStatus.PUBLISHED;
-        this.publishedAt = publicationTime;
-        this.updatedAt = publicationTime;
+        this.publishedAt = publishedAt;
+        this.updatedAt = changedAt;
     }
 
     public void archive(Instant timestamp) {
@@ -185,6 +188,39 @@ public class Article {
             tags.remove(tag);
             tag.detachArticle(this);
             this.updatedAt = changedAt;
+        }
+    }
+
+    public void replaceTags(Set<Tag> replacements, Instant timestamp) {
+        Set<Tag> revisedTags = new LinkedHashSet<>(Objects.requireNonNull(replacements, "tags are required"));
+        revisedTags.forEach(tag -> Objects.requireNonNull(tag, "tag is required"));
+        if (tags.equals(revisedTags)) {
+            return;
+        }
+        Instant changedAt = Objects.requireNonNull(timestamp, "timestamp is required");
+        for (Tag tag : new LinkedHashSet<>(tags)) {
+            if (!revisedTags.contains(tag)) {
+                tags.remove(tag);
+                tag.detachArticle(this);
+            }
+        }
+        for (Tag tag : revisedTags) {
+            if (tags.add(tag)) {
+                tag.attachArticle(this);
+            }
+        }
+        this.updatedAt = changedAt;
+    }
+
+    public void requireEditable() {
+        if (status == ArticleStatus.ARCHIVED) {
+            throw new IllegalStateException("archived articles cannot be edited");
+        }
+    }
+
+    public void requireDraftDeletion() {
+        if (status != ArticleStatus.DRAFT) {
+            throw new IllegalStateException("only draft articles can be deleted");
         }
     }
 
@@ -264,45 +300,4 @@ public class Article {
         return id.hashCode();
     }
 
-}
-
-@Converter
-class ContentSlugConverter implements AttributeConverter<Slug, String> {
-
-    private static final SlugPolicy POLICY = new SlugPolicy();
-
-    @Override
-    public String convertToDatabaseColumn(Slug attribute) {
-        return attribute == null ? null : attribute.value();
-    }
-
-    @Override
-    public Slug convertToEntityAttribute(String databaseValue) {
-        return databaseValue == null ? null : POLICY.create(databaseValue);
-    }
-}
-
-final class ContentFieldRules {
-
-    private ContentFieldRules() {
-    }
-
-    static String requireText(String value, int maximumLength, String field) {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(field + " is required");
-        }
-        return requireValue(value, maximumLength, field);
-    }
-
-    static String requireValue(String value, int maximumLength, String field) {
-        Objects.requireNonNull(value, field + " is required");
-        if (value.length() > maximumLength) {
-            throw new IllegalArgumentException(field + " must not exceed " + maximumLength + " characters");
-        }
-        return value;
-    }
-
-    static String requireOptionalValue(String value, int maximumLength, String field) {
-        return value == null ? null : requireValue(value, maximumLength, field);
-    }
 }
