@@ -12,6 +12,17 @@ public interface ExperienceRepository extends Repository<Experience, UUID> {
 
     Optional<Experience> findById(UUID id);
 
+    void delete(Experience experience);
+
+    void flush();
+
+    @Query(value = """
+            select e.*
+            from portfolio_experience e
+            order by e.sort_order asc, e.id asc
+            """, nativeQuery = true)
+    List<Experience> findAdminExperiences();
+
     @Query(value = """
             select e.*
             from portfolio_experience e

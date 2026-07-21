@@ -23,8 +23,7 @@ class StudyStackModulesTest {
             "media",
             "portfolio",
             "shared");
-    private static final Set<String> EMPTY_BUSINESS_MODULES = Set.of(
-            "admin", "comment", "media");
+    private static final Set<String> EMPTY_BUSINESS_MODULES = Set.of("comment", "media");
     private static final Path MAIN_PACKAGE = Path.of("src", "main", "java", "com", "studystack");
 
     @Test

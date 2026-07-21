@@ -1,21 +1,26 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RouterView } from 'vue-router'
+import { RouterView, useRoute } from 'vue-router'
 import type { AuthClient } from './features/auth/auth-client'
 import { useAuthLogout, useAuthQuery } from './features/auth/auth-query'
 
 const props = defineProps<{ authClient: AuthClient }>()
+const route = useRoute()
 const authQuery = useAuthQuery(props.authClient)
 const logout = useAuthLogout(props.authClient)
 const currentUser = computed(() => !logout.isSuccess.value && authQuery.data.value?.authenticated
   ? authQuery.data.value.user
   : null)
 const isAdmin = computed(() => currentUser.value?.roles.includes('ADMIN') ?? false)
+const isAdminRoute = computed(() => route.matched.some((record) => record.meta.admin === true))
 </script>
 
 <template>
   <div class="app-shell">
-    <header class="app-header">
+    <header
+      v-if="!isAdminRoute"
+      class="app-header"
+    >
       <RouterLink
         class="brand"
         to="/"
@@ -66,10 +71,16 @@ const isAdmin = computed(() => currentUser.value?.roles.includes('ADMIN') ?? fal
         </RouterLink>
       </nav>
     </header>
-    <main class="app-main">
+    <main
+      class="app-main"
+      :class="{ 'admin-main': isAdminRoute }"
+    >
       <RouterView />
     </main>
-    <footer class="app-footer">
+    <footer
+      v-if="!isAdminRoute"
+      class="app-footer"
+    >
       <span>StudyStack</span>
       <RouterLink to="/foundation">
         Foundation
@@ -198,6 +209,12 @@ a {
   width: min(100% - 48px, 1120px);
   margin: 0 auto;
   padding: 52px 0 80px;
+}
+
+.app-main.admin-main {
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .app-footer {

@@ -8,4 +8,6 @@ public interface PortfolioProfileRepository extends Repository<PortfolioProfile,
     PortfolioProfile save(PortfolioProfile profile);
 
     Optional<PortfolioProfile> findById(Integer id);
+
+    void flush();
 }

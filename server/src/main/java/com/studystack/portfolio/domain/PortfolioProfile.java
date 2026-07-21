@@ -59,6 +59,25 @@ public class PortfolioProfile {
         this.updatedAt = timestamp;
     }
 
+    public void revise(
+            String displayName,
+            String headline,
+            String bioMarkdown,
+            String seoDescription,
+            Instant timestamp) {
+        String revisedDisplayName = PortfolioFieldRules.requireText(displayName, 120, "displayName");
+        String revisedHeadline = PortfolioFieldRules.requireText(headline, 180, "headline");
+        String revisedBio = PortfolioFieldRules.requireValue(bioMarkdown, 50_000, "bioMarkdown");
+        String revisedSeoDescription = PortfolioFieldRules.requireOptionalValue(
+                seoDescription, 160, "seoDescription");
+        Instant changedAt = Objects.requireNonNull(timestamp, "timestamp is required");
+        this.displayName = revisedDisplayName;
+        this.headline = revisedHeadline;
+        this.bioMarkdown = revisedBio;
+        this.seoDescription = revisedSeoDescription;
+        this.updatedAt = changedAt;
+    }
+
     public Integer id() {
         return id;
     }

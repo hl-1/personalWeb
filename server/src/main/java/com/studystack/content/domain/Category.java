@@ -55,6 +55,15 @@ public class Category {
         this.updatedAt = timestamp;
     }
 
+    public void update(String name, Slug slug, Instant timestamp) {
+        String revisedName = ContentFieldRules.requireText(name, 120, "name");
+        Slug revisedSlug = Objects.requireNonNull(slug, "slug is required");
+        Instant changedAt = Objects.requireNonNull(timestamp, "timestamp is required");
+        this.name = revisedName;
+        this.slug = revisedSlug;
+        this.updatedAt = changedAt;
+    }
+
     void attachArticle(Article article) {
         articles.add(Objects.requireNonNull(article, "article is required"));
     }

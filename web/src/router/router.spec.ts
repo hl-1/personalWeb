@@ -100,7 +100,7 @@ describe('StudyStack routes', () => {
     expect(router.currentRoute.value.name).toBe('forbidden')
   })
 
-  it('allows an authenticated admin to enter the admin placeholder', async () => {
+  it('allows an authenticated admin to enter the admin dashboard', async () => {
     const router = createStudyStackRouter(
       createMemoryHistory(),
       routeAccess(authenticatedState(['USER', 'ADMIN'])),
@@ -112,8 +112,8 @@ describe('StudyStack routes', () => {
     wrapper = mount(RouteHost, {
       global: { plugins: [router, [VueQueryPlugin, { queryClient: new QueryClient() }]] },
     })
-    expect(router.currentRoute.value.name).toBe('admin')
-    expect(wrapper.get('[data-testid="admin-view"]').text()).toContain('Admin')
+    expect(router.currentRoute.value.name).toBe('admin-dashboard')
+    expect(wrapper.get('[data-testid="admin-dashboard-view"]').text()).toContain('Administration')
   })
 
   it('refreshes auth state after login success and consumes the saved path', async () => {

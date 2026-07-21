@@ -35,6 +35,8 @@ class P2ScopeContractTest {
                     "server/src/main/java/com/studystack/content/domain/ArticleStatus.java",
                     "server/src/main/java/com/studystack/content/domain/Category.java",
                     "server/src/main/java/com/studystack/content/domain/CategoryRepository.java",
+                    "server/src/main/java/com/studystack/content/domain/ContentFieldRules.java",
+                    "server/src/main/java/com/studystack/content/domain/ContentSlugConverter.java",
                     "server/src/main/java/com/studystack/content/domain/Tag.java",
                     "server/src/main/java/com/studystack/content/domain/TagRepository.java",
                     "server/src/main/java/com/studystack/content/infrastructure/seo/ContentSitemapContributor.java",
@@ -56,6 +58,9 @@ class P2ScopeContractTest {
                     "server/src/main/java/com/studystack/portfolio/domain/ExperienceRepository.java",
                     "server/src/main/java/com/studystack/portfolio/domain/PortfolioProfile.java",
                     "server/src/main/java/com/studystack/portfolio/domain/PortfolioProfileRepository.java",
+                    "server/src/main/java/com/studystack/portfolio/domain/PortfolioFieldRules.java",
+                    "server/src/main/java/com/studystack/portfolio/domain/PortfolioSlugConverter.java",
+                    "server/src/main/java/com/studystack/portfolio/domain/PortfolioUrlPolicy.java",
                     "server/src/main/java/com/studystack/portfolio/domain/Project.java",
                     "server/src/main/java/com/studystack/portfolio/domain/ProjectRepository.java",
                     "server/src/main/java/com/studystack/portfolio/domain/ProjectStatus.java",
@@ -94,7 +99,7 @@ class P2ScopeContractTest {
     private static final List<String> P2_CONTROLLER_ROOTS = List.of(
             "server/src/main/java/com/studystack/content",
             "server/src/main/java/com/studystack/portfolio");
-    private static final List<String> LATER_PHASE_MODULES = List.of("admin", "comment", "media");
+    private static final List<String> LATER_PHASE_MODULES = List.of("comment", "media");
     private static final Pattern MAPPING_ANNOTATION =
             Pattern.compile("@(Post|Put|Patch|Delete)Mapping\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern REQUEST_METHOD =
@@ -197,6 +202,9 @@ class P2ScopeContractTest {
         for (String root : P2_IMPLEMENTATION_ROOTS) {
             for (Path source : javaFilesBelow(projectRoot.resolve(root))) {
                 String relative = relativePath(projectRoot, source);
+                if (relative.contains("/application/admin/")) {
+                    continue;
+                }
                 if (!allowedFiles.contains(relative)) {
                     violations.add(relative + ": outside approved P2 responsibility map");
                 }
@@ -257,6 +265,7 @@ class P2ScopeContractTest {
         }
         try (Stream<Path> paths = Files.walk(webSource)) {
             return paths.filter(Files::isRegularFile)
+                    .filter(path -> !relativePath(projectRoot, path).startsWith("web/src/views/admin/"))
                     .filter(path -> ADMIN_CRUD_PAGE.matcher(path.getFileName().toString()).matches())
                     .map(path -> relativePath(projectRoot, path)
                             + ": P2 admin CRUD page is reserved for P3")

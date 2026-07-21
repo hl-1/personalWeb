@@ -17,6 +17,36 @@ public interface ProjectRepository extends Repository<Project, UUID> {
 
     Optional<Project> findBySlug(Slug slug);
 
+    void delete(Project project);
+
+    void flush();
+
+    @Query(value = """
+            select p.*
+            from portfolio_project p
+            where (:status is null or p.status = :status)
+              and (:query is null
+                   or lower(p.title) like concat('%', lower(:query), '%')
+                   or lower(p.slug) like concat('%', lower(:query), '%'))
+            order by p.updated_at desc, p.id desc
+            limit :limit offset :offset
+            """, nativeQuery = true)
+    List<Project> findAdminProjects(
+            @Param("status") String status,
+            @Param("query") String query,
+            @Param("limit") int limit,
+            @Param("offset") long offset);
+
+    @Query(value = """
+            select count(*)
+            from portfolio_project p
+            where (:status is null or p.status = :status)
+              and (:query is null
+                   or lower(p.title) like concat('%', lower(:query), '%')
+                   or lower(p.slug) like concat('%', lower(:query), '%'))
+            """, nativeQuery = true)
+    long countAdminProjects(@Param("status") String status, @Param("query") String query);
+
     @Query(value = """
             select p.*
             from portfolio_project p

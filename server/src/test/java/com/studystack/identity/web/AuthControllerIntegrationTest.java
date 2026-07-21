@@ -18,6 +18,7 @@ import com.studystack.content.infrastructure.seo.ContentSitemapContributor;
 import com.studystack.identity.infrastructure.security.StudyStackPrincipal;
 import com.studystack.portfolio.application.PublicPortfolioQuery;
 import com.studystack.portfolio.infrastructure.seo.PortfolioSitemapContributor;
+import com.studystack.support.AdminNoDatabaseTestSupport;
 import jakarta.servlet.http.Cookie;
 import java.util.List;
 import java.util.UUID;
@@ -26,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
@@ -39,7 +41,7 @@ import org.springframework.test.web.servlet.MvcResult;
         AuthControllerIntegrationTest.DATABASE_AUTO_CONFIGURATION_EXCLUSIONS,
         "management.endpoint.health.validate-group-membership=false"
 })
-class AuthControllerIntegrationTest {
+class AuthControllerIntegrationTest extends AdminNoDatabaseTestSupport {
 
     static final String DATABASE_AUTO_CONFIGURATION_EXCLUSIONS =
             "spring.autoconfigure.exclude="
@@ -123,14 +125,18 @@ class AuthControllerIntegrationTest {
     void logoutRejectsMissingAndIncorrectCsrfTokens() throws Exception {
         mockMvc.perform(post(LOGOUT_PATH))
                 .andExpect(status().isForbidden())
-                .andExpect(content().string(""));
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.code").value("csrf_failed"));
 
         CsrfExchange exchange = requestCsrf();
         mockMvc.perform(post(LOGOUT_PATH)
                         .session(exchange.session())
                         .header(exchange.headerName(), "incorrect-token"))
                 .andExpect(status().isForbidden())
-                .andExpect(content().string(""));
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.code").value("csrf_failed"));
     }
 
     @Test

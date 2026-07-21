@@ -130,11 +130,13 @@ class ContentSchemaIntegrationTest {
 
         assertEquals(Set.of(
                 "pk_content_category",
+                "uk_content_category_name",
                 "uk_content_category_slug",
                 "ck_content_category_name_not_blank",
                 "ck_content_category_slug",
                 "ck_content_category_version",
                 "pk_content_tag",
+                "uk_content_tag_name",
                 "uk_content_tag_slug",
                 "ck_content_tag_name_not_blank",
                 "ck_content_tag_slug",
@@ -302,7 +304,7 @@ class ContentSchemaIntegrationTest {
                 values (?, ?, ?, ?, ?)
                 """,
                 id,
-                "Category",
+                slug,
                 slug,
                 now,
                 now);
@@ -318,7 +320,7 @@ class ContentSchemaIntegrationTest {
                 values (?, ?, ?, ?, ?)
                 """,
                 id,
-                "Tag",
+                slug,
                 slug,
                 now,
                 now);

@@ -9,6 +9,7 @@ import com.studystack.content.application.PublicArticleQuery;
 import com.studystack.content.infrastructure.seo.ContentSitemapContributor;
 import com.studystack.portfolio.application.PublicPortfolioQuery;
 import com.studystack.portfolio.infrastructure.seo.PortfolioSitemapContributor;
+import com.studystack.support.AdminNoDatabaseTestSupport;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -46,7 +47,7 @@ import org.w3c.dom.NodeList;
                         + "org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration",
                 "management.endpoint.health.validate-group-membership=false"
         })
-class IdentitySecurityBaselineTest {
+class IdentitySecurityBaselineTest extends AdminNoDatabaseTestSupport {
 
     @Autowired
     TestRestTemplate restTemplate;

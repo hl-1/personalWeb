@@ -61,6 +61,18 @@ class IdentitySecurityPropertiesTest {
     }
 
     @Test
+    void developmentProfileAcceptsInjectedAdminGithubIds() {
+        try (ConfigurableApplicationContext context = start(
+                "dev",
+                "--STUDYSTACK_ADMIN_GITHUB_IDS=101,202")) {
+            IdentitySecurityProperties properties =
+                    context.getBean(IdentitySecurityProperties.class);
+
+            assertEquals("101,202", properties.adminGithubIds());
+        }
+    }
+
+    @Test
     void productionProfileBindsOnlyInjectedOAuthAndAdminValues() {
         try (ConfigurableApplicationContext context = start(
                 "prod",

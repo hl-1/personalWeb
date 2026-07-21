@@ -76,6 +76,32 @@ public class Experience {
         this.updatedAt = timestamp;
     }
 
+    public void revise(
+            String organization,
+            String role,
+            LocalDate startDate,
+            LocalDate endDate,
+            String summaryMarkdown,
+            int sortOrder,
+            boolean visible,
+            Instant timestamp) {
+        String revisedOrganization = PortfolioFieldRules.requireText(organization, 180, "organization");
+        String revisedRole = PortfolioFieldRules.requireText(role, 180, "role");
+        PortfolioFieldRules.requireDateRange(startDate, endDate);
+        String revisedSummary = PortfolioFieldRules.requireValue(
+                summaryMarkdown, 20_000, "summaryMarkdown");
+        int revisedSortOrder = PortfolioFieldRules.requireSortOrder(sortOrder);
+        Instant changedAt = Objects.requireNonNull(timestamp, "timestamp is required");
+        this.organization = revisedOrganization;
+        this.role = revisedRole;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.summaryMarkdown = revisedSummary;
+        this.sortOrder = revisedSortOrder;
+        this.visible = visible;
+        this.updatedAt = changedAt;
+    }
+
     public UUID id() {
         return id;
     }

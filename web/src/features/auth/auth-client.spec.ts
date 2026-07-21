@@ -36,6 +36,16 @@ describe('createAuthClient', () => {
     expect(fetchImplementation).toHaveBeenCalledTimes(1)
   })
 
+  it('shares one in-flight CSRF request between concurrent callers', async () => {
+    const fetchImplementation = vi.fn<FetchImplementation>()
+      .mockResolvedValue(jsonResponse(csrfResponse))
+    const client = createAuthClient({ apiBaseUrl: '/api', fetch: fetchImplementation })
+
+    await expect(Promise.all([client.getCsrfToken(), client.getCsrfToken()]))
+      .resolves.toEqual([csrfResponse, csrfResponse])
+    expect(fetchImplementation).toHaveBeenCalledTimes(1)
+  })
+
   it('fetches a CSRF token before logout and clears it after success', async () => {
     const fetchImplementation = vi.fn<FetchImplementation>()
       .mockResolvedValueOnce(jsonResponse(csrfResponse))
