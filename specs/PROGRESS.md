@@ -9,7 +9,7 @@ verified: 2026-07-20
 
 ## 当前状态
 
-P3 Admin 的 Task 1-18 已在 `codex/p3-admin` 本地实现，当前状态为 `P3 / awaiting-user-acceptance`。这不授权开始 P4，也不授权暂存、提交、推送或创建 PR。
+P3 Admin 的 Task 1-18 已在 `codex/p3-admin` 实现并提交到 Draft PR #6，当前状态为 `P3 / awaiting-user-acceptance`。这不授权开始 P4。
 
 ## P3 行为证据
 
@@ -30,6 +30,8 @@ P3 Admin 的 Task 1-18 已在 `codex/p3-admin` 本地实现，当前状态为 `P
 | `pnpm typecheck` | 状态 0 |
 | `pnpm build` | 状态 0，265 个模块完成生产构建 |
 | 新增管理 E2E | 状态 0，8 个 Playwright 测试通过 |
+| PR #6 CI 定向回归 | 模块契约 3 组、后端失败集 6 组、认证路由 E2E 5 个、资料表单 4 个测试均通过 |
+| PR #6 CI 静态检查 | 改动文件 ESLint、前端类型检查均为状态 0 |
 | Compose 配置测试 | 状态 0，7 个测试通过；生产 Compose 不含测试身份旁路 |
 | `git diff --check` | 状态 0 |
 
@@ -54,6 +56,6 @@ P3 Admin 的 Task 1-18 已在 `codex/p3-admin` 本地实现，当前状态为 `P
 
 ## 仓库状态与下一步
 
-当前分支为 `codex/p3-admin`。P3 Task 1-18 改动均保留在工作区，未暂存、未提交、未推送。`server/.idea/` 为既有未跟踪目录，未修改或清理。
+当前分支为 `codex/p3-admin`，Draft PR 为 #6。CI 修复包含 P3 模块契约/旧测试断言同步、无数据库测试的 admin mock，以及资料表单重复保存时仅映射允许字段。`server/.idea/` 为既有未跟踪目录，未修改或清理。
 
-下一步仅由用户决定：验收 P3、补跑被跳过的聚合项，或明确授权 Git 操作。未经明确授权不得开始 P4。
+下一步仅由用户决定：验收 P3 或补跑被跳过的聚合项。未经明确授权不得开始 P4。

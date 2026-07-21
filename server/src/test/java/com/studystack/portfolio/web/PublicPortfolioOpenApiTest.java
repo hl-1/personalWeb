@@ -12,6 +12,7 @@ import com.studystack.content.application.PublicArticleQuery;
 import com.studystack.content.infrastructure.seo.ContentSitemapContributor;
 import com.studystack.portfolio.application.PublicPortfolioQuery;
 import com.studystack.portfolio.infrastructure.seo.PortfolioSitemapContributor;
+import com.studystack.support.AdminNoDatabaseTestSupport;
 import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,7 @@ import org.springframework.test.web.servlet.MockMvc;
         PublicPortfolioOpenApiTest.DATABASE_AUTO_CONFIGURATION_EXCLUSIONS,
         "management.endpoint.health.validate-group-membership=false"
 })
-class PublicPortfolioOpenApiTest {
+class PublicPortfolioOpenApiTest extends AdminNoDatabaseTestSupport {
 
     static final String DATABASE_AUTO_CONFIGURATION_EXCLUSIONS =
             "spring.autoconfigure.exclude="

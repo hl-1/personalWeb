@@ -12,6 +12,7 @@ import com.studystack.content.application.PublicArticleQuery;
 import com.studystack.content.infrastructure.seo.ContentSitemapContributor;
 import com.studystack.portfolio.application.PublicPortfolioQuery;
 import com.studystack.portfolio.infrastructure.seo.PortfolioSitemapContributor;
+import com.studystack.support.AdminNoDatabaseTestSupport;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +28,7 @@ import org.springframework.test.web.servlet.MockMvc;
         PublicContentOpenApiTest.DATABASE_AUTO_CONFIGURATION_EXCLUSIONS,
         "management.endpoint.health.validate-group-membership=false"
 })
-class PublicContentOpenApiTest {
+class PublicContentOpenApiTest extends AdminNoDatabaseTestSupport {
 
     static final String DATABASE_AUTO_CONFIGURATION_EXCLUSIONS =
             "spring.autoconfigure.exclude="
@@ -57,7 +58,7 @@ class PublicContentOpenApiTest {
     void documentsP2PublicContentPathsWithoutSessionRequirements() throws Exception {
         JsonNode document = apiDocument();
 
-        assertEquals("P2", document.path("info").path("version").asText());
+        assertEquals("P3", document.path("info").path("version").asText());
         assertEquals(
                 Set.of(
                         "/api/v1/articles",

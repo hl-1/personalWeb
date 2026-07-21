@@ -84,13 +84,15 @@ test('authenticated users without ADMIN are sent to forbidden', async ({ page })
   await expect(page.getByTestId('forbidden-view'), details).toBeVisible()
 })
 
-test('admins enter the placeholder and can log out with CSRF', async ({ page }) => {
+test('admins enter the dashboard and can log out with CSRF', async ({ page }) => {
   await mockAuthentication(page, 'admin')
 
   await page.goto('/admin')
 
   const details = await diagnostic(page, '/admin', 'admin', 'valid-admin')
-  await expect(page.getByTestId('admin-view'), details).toBeVisible()
+  await expect(page.getByTestId('admin-dashboard-view'), details).toBeVisible()
+  await page.getByTestId('admin-exit-link').click()
+  await expect(page.getByTestId('logout-button'), details).toBeVisible()
   await page.getByTestId('logout-button').click()
   await expect(page.getByTestId('login-link'), details).toBeVisible()
 })
@@ -100,7 +102,7 @@ test('an expired Session is treated as anonymous after reload', async ({ page })
   await page.route('**/api/v1/auth/me', (route) => fulfillJson(route, authResponse(identity)))
 
   await page.goto('/admin')
-  await expect(page.getByTestId('admin-view')).toBeVisible()
+  await expect(page.getByTestId('admin-dashboard-view')).toBeVisible()
 
   identity = 'anonymous'
   await page.reload()

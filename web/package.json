@@ -11,7 +11,7 @@
     "contract:generate": "node -e \"require('node:fs').mkdirSync('src/shared/api/generated',{recursive:true})\" && openapi-typescript ../server/target/openapi/openapi.json -o src/shared/api/generated/openapi.d.ts",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
-    "test": "vitest run",
+    "test": "vitest run --maxWorkers=2",
     "test:e2e": "playwright test"
   },
   "dependencies": {

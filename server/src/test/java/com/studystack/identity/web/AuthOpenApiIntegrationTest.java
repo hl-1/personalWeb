@@ -12,6 +12,7 @@ import com.studystack.content.application.PublicArticleQuery;
 import com.studystack.content.infrastructure.seo.ContentSitemapContributor;
 import com.studystack.portfolio.application.PublicPortfolioQuery;
 import com.studystack.portfolio.infrastructure.seo.PortfolioSitemapContributor;
+import com.studystack.support.AdminNoDatabaseTestSupport;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -29,7 +30,7 @@ import org.springframework.test.web.servlet.MockMvc;
         AuthControllerIntegrationTest.DATABASE_AUTO_CONFIGURATION_EXCLUSIONS,
         "management.endpoint.health.validate-group-membership=false"
 })
-class AuthOpenApiIntegrationTest {
+class AuthOpenApiIntegrationTest extends AdminNoDatabaseTestSupport {
 
     @Autowired
     MockMvc mockMvc;
@@ -58,7 +59,7 @@ class AuthOpenApiIntegrationTest {
                 .getContentAsString();
         JsonNode document = objectMapper.readTree(body);
 
-        assertEquals("P2", document.at("/info/version").asText());
+        assertEquals("P3", document.at("/info/version").asText());
         assertResponse(document, "/api/v1/auth/me", "get", "200");
         assertResponse(document, "/api/v1/auth/csrf", "get", "200");
         assertResponse(document, "/api/v1/auth/logout", "post", "204");

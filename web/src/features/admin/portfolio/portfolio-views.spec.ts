@@ -24,6 +24,7 @@ describe('portfolio admin views',()=>{
 
     await wrapper.get('[data-testid="save-profile"]').trigger('submit')
     await vi.waitFor(()=>expect(upsertProfile).toHaveBeenCalledTimes(1))
+    await vi.waitFor(()=>expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeUndefined())
     await wrapper.get('[data-testid="save-profile"]').trigger('submit')
 
     await vi.waitFor(()=>expect(upsertProfile).toHaveBeenCalledTimes(2))
