@@ -2,9 +2,9 @@
 task_id: P3-ADMIN-001
 title: StudyStack 管理后台
 phase: P3
-status: draft
+status: implemented-awaiting-user-acceptance
 created: 2026-07-17
-updated: 2026-07-17
+updated: 2026-07-21
 design_refs:
   - C:/softWare/project/workDoc/java-personal-website-design.md
   - docs/AI-PROJECT-DELIVERY-PLAN.md
@@ -846,6 +846,7 @@ Expected: profile、skill、experience 全部管理路径和状态通过。
 - Create: `web/e2e/admin-security.spec.ts`
 - Modify: `specs/PROGRESS.md`
 - Modify: `docs/AI-CONTEXT-HANDOFF.md`
+- Create: `specs/features/P3-ADMIN-001/SESSION_HANDOFF_AFTER_TASK18.md`
 
 ### RED
 
@@ -924,3 +925,26 @@ P3 只有在以下条件同时满足时完成：
 - 管理写入正确影响 P2 公开页面，同时草稿、归档和未来发布继续保持不可见。
 - P0-P2 的 OAuth、Session、公开内容、SEO、Caddy、契约和测试无回归。
 - `specs/PROGRESS.md` 为 `P3 / awaiting-user-acceptance`；未经用户验收不开始 P4。
+
+## 6. 实施与验证记录
+
+截至 2026-07-21，Task 1-18 已在 `codex/p3-admin` 实现。功能实现提交为 `2bdb613`，CI 回归与资料重复保存修复提交为 `4a24811`；PR #6 已合并到 `main`。P3 状态保持 `implemented-awaiting-user-acceptance`，不自动授权 P4。
+
+### 6.1 CI 验证
+
+PR #6 最新 push 与 pull request 两组 CI 均通过：
+
+- backend：执行 `./mvnw -B -ntp verify`，状态 0。
+- frontend：执行 frozen install、lint、typecheck、Vitest 和 production build，状态 0。
+- contract：使用 backend 生成的 OpenAPI 执行 `pnpm contract:check`，状态 0。
+- compose：Compose 配置检查和策略测试状态 0。
+- e2e：构建完整 Compose 拓扑、执行 Playwright 并清理 volumes，状态 0。
+
+本地在用户明确要求下没有运行完整 backend `verify`；该缺口由 GitHub CI 的 backend `verify` 成功结果补足。详细交接见 `SESSION_HANDOFF_AFTER_TASK18.md`。
+
+### 6.2 CI 回归修复范围
+
+- P2 范围断言只保护 P2 公开边界，允许 P3 admin 文件；Modulith 依赖继续限制为批准的 named interface。
+- 无数据库 Web/OpenAPI 测试统一提供 admin service mock，避免加载 P3 Controller 后产生无关上下文失败。
+- P3 OpenAPI 版本、CSRF ProblemDetail、V6 taxonomy name 唯一约束及测试夹具与新契约保持一致。
+- 管理员资料响应进入表单时只映射允许字段，不把 `id`、时间戳等响应字段混入 strict schema，重复保存已由回归测试覆盖。

@@ -2,14 +2,14 @@
 phase: P3
 feature: P3-ADMIN-001
 status: awaiting-user-acceptance
-verified: 2026-07-20
+verified: 2026-07-21
 ---
 
 # StudyStack 实施进度
 
 ## 当前状态
 
-P3 Admin 的 Task 1-18 已在 `codex/p3-admin` 实现并提交到 Draft PR #6，当前状态为 `P3 / awaiting-user-acceptance`。这不授权开始 P4。
+P3 Admin 的 Task 1-18 已通过 PR #6 合并到 `main`，产品与技术规格已通过 PR #7 补齐。当前状态为 `P3 / awaiting-user-acceptance`，这不授权开始 P4。
 
 ## P3 行为证据
 
@@ -19,25 +19,19 @@ P3 Admin 的 Task 1-18 已在 `codex/p3-admin` 实现并提交到 Draft PR #6，
 - A13-A17：P3 OpenAPI、generated TypeScript、strict Zod、同源 Session client、后台路由、通用状态和响应式管理页面已同步。
 - A18：新增 Playwright 覆盖匿名/普通用户/管理员路由、CSRF、文章创建/预览/XSS/发布/并发、taxonomy 引用冲突、项目状态流和 portfolio 写入。
 
-## 本次验证结果
+## 最终验证结果
 
 | 检查 | 结果 |
 |---|---|
-| `OpenApiDevelopmentIntegrationTest` | 状态 0；生成 P3 OpenAPI |
-| `pnpm contract:check` RED | 按预期失败，generated 类型与 P3 OpenAPI 存在差异 |
-| `pnpm contract:generate` + `contract:check` | 状态 0 |
-| `pnpm lint` | 状态 0，无 warning |
-| `pnpm typecheck` | 状态 0 |
-| `pnpm build` | 状态 0，265 个模块完成生产构建 |
-| 新增管理 E2E | 状态 0，8 个 Playwright 测试通过 |
-| PR #6 CI 定向回归 | 模块契约 3 组、后端失败集 6 组、认证路由 E2E 5 个、资料表单 4 个测试均通过 |
-| PR #6 CI 静态检查 | 改动文件 ESLint、前端类型检查均为状态 0 |
-| Compose 配置测试 | 状态 0，7 个测试通过；生产 Compose 不含测试身份旁路 |
+| PR #6 backend | push 与 pull request 工作流均通过完整 `mvnw verify`，并生成 OpenAPI |
+| PR #6 frontend | push 与 pull request 工作流均通过 frozen install、lint、typecheck、Vitest 和 production build |
+| PR #6 contract | push 与 pull request 工作流均通过 generated TypeScript 与 OpenAPI 一致性检查 |
+| PR #6 compose | push 与 pull request 工作流均通过 Compose 配置和生产策略测试 |
+| PR #6 e2e | push 与 pull request 工作流均通过完整 Compose 拓扑、Playwright 和 volume 清理 |
+| PR #7 文档跟进 | backend、frontend、contract、compose 和 e2e 的 push 与 pull request 工作流均通过 |
 | `git diff --check` | 状态 0 |
 
-全量 Vitest 聚合首次运行时，已启动的 25 个文件和 170 个断言均通过，但并行资源争用导致 11 个 worker 启动超时，命令最终状态 1；低并发复跑被用户消息中断，未宣称全绿。
-
-后端完整 `mvnw verify` 已按用户明确要求停止，不再运行。本阶段此前的定向后端测试和本次 OpenAPI 集成测试通过，但不能替代完整后端聚合。
+本地没有重复运行完整 backend verify、Compose 生命周期和全量 Playwright；这些聚合项已由 PR #6 的 GitHub CI 执行并通过。PR #7 的文档跟进再次通过同一组聚合工作流。
 
 ## 安全与边界结论
 
@@ -48,14 +42,13 @@ P3 Admin 的 Task 1-18 已在 `codex/p3-admin` 实现并提交到 Draft PR #6，
 - Java 主代码未命中旧 Swagger 注解；`v-html` 仅存在于 `SafeMarkdownView`。
 - admin 主代码未直接依赖 content/portfolio 的 domain 或 infrastructure 包。
 
-## 未运行项
+## 环境外验证项
 
-- 未完成后端完整 `verify`，原因是用户明确要求不需要。
-- 未运行完整 Compose `up`、全量 P0-P3 Playwright 和数据库生命周期清理；本次新增管理 E2E 使用本地 Vite 与 Playwright route mock，不调用真实 GitHub。
-- 未使用真实 GitHub OAuth App，未触发 GitHub CI，未执行公网部署。
+- 未使用真实生产 GitHub OAuth App 执行外部 provider 联调。
+- 未执行公网域名、TLS、备份、监控或正式生产部署；这些属于后续交付阶段。
 
 ## 仓库状态与下一步
 
-当前分支为 `codex/p3-admin`，Draft PR 为 #6。CI 修复包含 P3 模块契约/旧测试断言同步、无数据库测试的 admin mock，以及资料表单重复保存时仅映射允许字段。`server/.idea/` 为既有未跟踪目录，未修改或清理。
+P3 实现和 CI 回归修复已通过 PR #6 合并；产品与技术规格已通过 PR #7 合并。回归修复包含 P3 模块契约/旧测试断言同步、无数据库测试的 admin mock，以及资料表单重复保存时仅映射允许字段。
 
-下一步仅由用户决定：验收 P3 或补跑被跳过的聚合项。未经明确授权不得开始 P4。
+下一步仅由用户决定是否验收 P3；生产 OAuth 与公网部署验证留待对应交付阶段。未经明确授权不得开始 P4。
