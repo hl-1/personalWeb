@@ -31,7 +31,7 @@ public sealed interface AdminArticleRequest {
 
     record Create(
             @NotBlank
-            @Size(max = 120)
+            @Size(min = 3, max = 120)
             @Pattern(regexp = SLUG_PATTERN)
             String slug,
             @NotBlank
@@ -67,7 +67,7 @@ public sealed interface AdminArticleRequest {
 
     record Update(
             @NotBlank
-            @Size(max = 120)
+            @Size(min = 3, max = 120)
             @Pattern(regexp = SLUG_PATTERN)
             String slug,
             @NotBlank

@@ -4,12 +4,17 @@ import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
 import { AdminApiError, type AdminClient, type AdminProjectInput } from '../../features/admin/admin-client'
 import type { AdminProject } from '../../features/admin/admin-schema'
-import { parseProjectForm, type ProjectForm } from '../../features/admin/project/project-form-schema'
+import { projectFormSchema, type ProjectForm } from '../../features/admin/project/project-form-schema'
 import { useProjectDraftStore, type ProjectDraftFields } from '../../features/admin/project/project-draft-store'
+import { createAdminFormValidation, focusAdminField } from '../../features/admin/admin-form-validation'
+import AdminFormField from '../../features/admin/components/AdminFormField.vue'
 import AdminPageState from '../../features/admin/components/AdminPageState.vue'
 import MarkdownEditor from '../../features/admin/components/MarkdownEditor.vue'
+import { useAdminOperationFeedback } from '../../features/admin/admin-operation-feedback'
+import { confirmAdminAction } from '../../features/admin/admin-confirmation'
 
 const props = defineProps<{ adminClient: AdminClient; id?: string }>()
+const feedback = useAdminOperationFeedback()
 const router = useRouter()
 const drafts = useProjectDraftStore()
 const isNew = computed(() => !props.id)
@@ -18,6 +23,11 @@ const stale = ref(false); const errorMessage = ref<string>(); const scheduleValu
 const currentStatus = ref<AdminProject['status']>()
 const form = reactive<ProjectForm>({ slug:'',title:'',summary:'',descriptionMarkdown:'',projectUrl:null,
   repositoryUrl:null,featured:false,sortOrder:0,version:null,publishMode:'draft',publishAt:null })
+const validation=createAdminFormValidation(projectFormSchema)
+const fieldOrder=['title','slug','sortOrder','summary','projectUrl','repositoryUrl','descriptionMarkdown','publishAt']
+function publishAtValue(){if(form.publishMode!=='scheduled'||!scheduleValue.value)return null
+  const value=new Date(scheduleValue.value);return Number.isNaN(value.valueOf())?'invalid':value.toISOString()}
+function validationInput(){return{...form,publishAt:publishAtValue()}}
 const project = useQuery({ queryKey: computed(() => ['admin','projects',props.id ?? 'new']),
   queryFn: () => props.adminClient.getProject(props.id ?? ''), enabled: computed(() => !isNew.value), retry:false })
 
@@ -31,7 +41,7 @@ function apply(value: AdminProject) {
   const server={slug:value.slug,title:value.title,summary:value.summary,descriptionMarkdown:value.descriptionMarkdown,
     projectUrl:value.projectUrl,repositoryUrl:value.repositoryUrl,featured:value.featured,sortOrder:value.sortOrder}
   const draft=drafts.load(value.id,value.version); assign(draft ?? server)
-  initialized.value=true; dirty.value=!!draft
+  initialized.value=true; dirty.value=!!draft;validation.resetValidation()
 }
 if(isNew.value){const draft=drafts.load(null,null);if(draft)assign(draft);initialized.value=true;dirty.value=!!draft}
 watch(project.data,(value)=>{if(value&&(!initialized.value||!dirty.value))apply(value)},{immediate:true})
@@ -45,20 +55,33 @@ const state=computed<'loading'|'error'|'unauthorized'|'forbidden'|'ready'>(()=>{
 function input(parsed:ProjectForm):AdminProjectInput{return{slug:parsed.slug,title:parsed.title,summary:parsed.summary,
   descriptionMarkdown:parsed.descriptionMarkdown,projectUrl:parsed.projectUrl,repositoryUrl:parsed.repositoryUrl,
   featured:parsed.featured,sortOrder:parsed.sortOrder}}
-async function save(){if(saving.value)return;saving.value=true;stale.value=false;errorMessage.value=undefined
-  try{const publishAt=form.publishMode==='scheduled'&&scheduleValue.value?new Date(scheduleValue.value).toISOString():null
-    const parsed=parseProjectForm({...form,publishAt});let saved:AdminProject
+async function save(){if(saving.value)return;stale.value=false;errorMessage.value=undefined
+  const result=validation.validateForSubmit(validationInput(),fieldOrder)
+  if(!result.success){errorMessage.value='Review the highlighted fields';await focusAdminField(result.firstInvalidField);return}
+  saving.value=true
+  const operation=isNew.value?'project.create':'project.update'
+  try{const parsed=result.data;let saved:AdminProject
     if(isNew.value){saved=(await props.adminClient.createProject(input(parsed))).data;drafts.clear(null);dirty.value=false;await router.replace(`/admin/portfolio/projects/${saved.id}`)}
     else{saved=await props.adminClient.updateProject(props.id??'',{...input(parsed),version:parsed.version??0});drafts.clear(props.id??null)}
-    apply(saved);dirty.value=false
-  }catch(error){if(error instanceof AdminApiError&&error.code==='stale_version')stale.value=true
+    apply(saved);dirty.value=false;feedback.succeeded(operation)
+  }catch(error){feedback.failed(operation);if(error instanceof AdminApiError&&error.code==='stale_version')stale.value=true
+    else if(error instanceof AdminApiError&&error.fieldErrors){errorMessage.value='Review the highlighted fields';await focusAdminField(validation.applyServerErrors(error.fieldErrors))}
     else if(error instanceof AdminApiError&&error.code==='duplicate_slug')errorMessage.value='Slug is already in use'
     else errorMessage.value='Unable to save project'}finally{saving.value=false}}
 async function reload(){const result=await project.refetch();if(result.data){drafts.clear(props.id??null);dirty.value=false;stale.value=false;apply(result.data)}}
-async function changeState(action:'publish'|'archive'){if(!props.id||form.version===null||saving.value)return;saving.value=true
+async function changeState(action:'publish'|'archive'){if(!props.id||form.version===null||saving.value)return
+  if(action==='publish'&&form.publishMode==='scheduled'){validation.touch('publishAt',validationInput())
+    if(validation.errorsFor('publishAt').length>0){errorMessage.value='Review the highlighted fields';await focusAdminField('publishAt');return}}
+  saving.value=true
+  const operation=action==='publish'?'project.publish':'project.archive'
   try{const at=form.publishMode==='scheduled'&&scheduleValue.value?new Date(scheduleValue.value).toISOString():null
-    apply(action==='publish'?await props.adminClient.publishProject(props.id,form.version,at):await props.adminClient.archiveProject(props.id,form.version));dirty.value=false}finally{saving.value=false}}
-onBeforeRouteLeave(()=>!dirty.value||globalThis.confirm('Discard unsaved project changes?'))
+    apply(action==='publish'?await props.adminClient.publishProject(props.id,form.version,at):await props.adminClient.archiveProject(props.id,form.version));dirty.value=false;feedback.succeeded(operation)}
+  catch{feedback.failed(operation);errorMessage.value=action==='publish'?'Unable to publish project':'Unable to archive project'}
+  finally{saving.value=false}}
+onBeforeRouteLeave(async()=>{
+  if(!dirty.value)return true
+  return await confirmAdminAction({title:'放弃未保存更改',message:'确定离开并放弃当前项目修改吗？',confirmButtonText:'放弃更改',cancelButtonText:'继续编辑',type:'warning'})==='confirmed'
+})
 </script>
 
 <template>
@@ -72,7 +95,7 @@ onBeforeRouteLeave(()=>!dirty.value||globalThis.confirm('Discard unsaved project
       :state="state"
       @retry="project.refetch()"
     >
-      <form
+      <el-form
         data-testid="save-project"
         class="project-form"
         @submit.prevent="save"
@@ -81,12 +104,11 @@ onBeforeRouteLeave(()=>!dirty.value||globalThis.confirm('Discard unsaved project
           v-if="stale"
           class="alert"
         >
-          <span>The server version changed. Your input is preserved.</span><button
-            type="button"
+          <span>The server version changed. Your input is preserved.</span><el-button
             @click="reload"
           >
             Reload server version
-          </button>
+          </el-button>
         </div>
         <p
           v-if="errorMessage"
@@ -95,89 +117,210 @@ onBeforeRouteLeave(()=>!dirty.value||globalThis.confirm('Discard unsaved project
           {{ errorMessage }}
         </p>
         <div class="grid">
-          <label class="wide"><span>Title</span><input
-            v-model="form.title"
+          <AdminFormField
+            class="wide"
             name="title"
-            maxlength="180"
-          ></label>
-          <label><span>Slug</span><input
-            v-model="form.slug"
+            label="Title"
+            required
+            hint="Required; up to 180 characters"
+            :errors="validation.errorsFor('title')"
+          >
+            <template #default="{controlId,describedBy,invalid}">
+              <el-input
+                :id="controlId"
+                v-model="form.title"
+                name="title"
+                maxlength="180"
+                :aria-describedby="describedBy"
+                :aria-invalid="invalid"
+                @blur="validation.touch('title',validationInput())"
+                @input="validation.change('title',validationInput())"
+              />
+            </template>
+          </AdminFormField>
+          <AdminFormField
             name="slug"
-            maxlength="120"
-          ></label>
-          <label><span>Sort order</span><input
-            v-model.number="form.sortOrder"
+            label="Slug"
+            required
+            hint="3-120 lowercase letters, numbers, and single hyphens"
+            :errors="validation.errorsFor('slug')"
+          >
+            <template #default="{controlId,describedBy,invalid}">
+              <el-input
+                :id="controlId"
+                v-model="form.slug"
+                name="slug"
+                maxlength="120"
+                :aria-describedby="describedBy"
+                :aria-invalid="invalid"
+                @blur="validation.touch('slug',validationInput())"
+                @input="validation.change('slug',validationInput())"
+              />
+            </template>
+          </AdminFormField>
+          <AdminFormField
             name="sortOrder"
-            type="number"
-            min="0"
-          ></label>
-          <label class="wide"><span>Summary</span><textarea
-            v-model="form.summary"
+            label="Sort order"
+            required
+            hint="Zero or a positive whole number"
+            :errors="validation.errorsFor('sortOrder')"
+          >
+            <template #default="{controlId,describedBy,invalid}">
+              <el-input-number
+                :id="controlId"
+                v-model.number="form.sortOrder"
+                name="sortOrder"
+                :min="0"
+                :step="1"
+                :precision="0"
+                :aria-describedby="describedBy"
+                :aria-invalid="invalid"
+                @blur="validation.touch('sortOrder',validationInput())"
+                @input="validation.change('sortOrder',validationInput())"
+              />
+            </template>
+          </AdminFormField>
+          <AdminFormField
+            class="wide"
             name="summary"
-            rows="3"
-            maxlength="500"
-          /></label>
-          <label><span>Project URL</span><input
-            v-model="form.projectUrl"
+            label="Summary"
+            required
+            hint="Required; up to 500 characters"
+            :errors="validation.errorsFor('summary')"
+          >
+            <template #default="{controlId,describedBy,invalid}">
+              <el-input
+                :id="controlId"
+                v-model="form.summary"
+                name="summary"
+                type="textarea"
+                :rows="3"
+                maxlength="500"
+                :aria-describedby="describedBy"
+                :aria-invalid="invalid"
+                @blur="validation.touch('summary',validationInput())"
+                @input="validation.change('summary',validationInput())"
+              />
+            </template>
+          </AdminFormField>
+          <AdminFormField
             name="projectUrl"
-            type="url"
-            maxlength="2048"
-          ></label>
-          <label><span>Repository URL</span><input
-            v-model="form.repositoryUrl"
+            label="Project URL"
+            hint="Optional HTTPS URL without credentials"
+            :errors="validation.errorsFor('projectUrl')"
+          >
+            <template #default="{controlId,describedBy,invalid}">
+              <el-input
+                :id="controlId"
+                v-model="form.projectUrl"
+                name="projectUrl"
+                maxlength="2048"
+                :aria-describedby="describedBy"
+                :aria-invalid="invalid"
+                @blur="validation.touch('projectUrl',validationInput())"
+                @input="validation.change('projectUrl',validationInput())"
+              />
+            </template>
+          </AdminFormField>
+          <AdminFormField
             name="repositoryUrl"
-            type="url"
-            maxlength="2048"
-          ></label>
-          <label class="check"><input
-            v-model="form.featured"
-            type="checkbox"
-          > Featured</label>
-          <label class="wide"><span>Description</span><MarkdownEditor
-            v-model="form.descriptionMarkdown"
-            :preview="adminClient.previewProject"
-          /></label>
+            label="Repository URL"
+            hint="Optional HTTPS URL without credentials"
+            :errors="validation.errorsFor('repositoryUrl')"
+          >
+            <template #default="{controlId,describedBy,invalid}">
+              <el-input
+                :id="controlId"
+                v-model="form.repositoryUrl"
+                name="repositoryUrl"
+                maxlength="2048"
+                :aria-describedby="describedBy"
+                :aria-invalid="invalid"
+                @blur="validation.touch('repositoryUrl',validationInput())"
+                @input="validation.change('repositoryUrl',validationInput())"
+              />
+            </template>
+          </AdminFormField>
+          <el-checkbox v-model="form.featured">
+            Featured
+          </el-checkbox>
+          <AdminFormField
+            class="wide"
+            name="descriptionMarkdown"
+            label="Description"
+            hint="Optional; up to 100,000 characters"
+            :errors="validation.errorsFor('descriptionMarkdown')"
+          >
+            <template #default="{controlId,describedBy,invalid}">
+              <MarkdownEditor
+                :model-value="form.descriptionMarkdown"
+                name="descriptionMarkdown"
+                :control-id="controlId"
+                :described-by="describedBy"
+                :invalid="invalid"
+                :preview="adminClient.previewProject"
+                @update:model-value="form.descriptionMarkdown=$event;validation.change('descriptionMarkdown',validationInput())"
+                @blur="validation.touch('descriptionMarkdown',validationInput())"
+              />
+            </template>
+          </AdminFormField>
         </div>
         <fieldset v-if="!isNew&&currentStatus==='DRAFT'">
           <legend>Publication</legend>
-          <label><input
-            v-model="form.publishMode"
-            type="radio"
-            value="now"
-          > Now</label><label><input
-            v-model="form.publishMode"
-            type="radio"
-            value="scheduled"
-          > Schedule</label>
-          <input
+          <el-radio-group v-model="form.publishMode">
+            <el-radio value="now">
+              Now
+            </el-radio>
+            <el-radio value="scheduled">
+              Schedule
+            </el-radio>
+          </el-radio-group>
+          <AdminFormField
             v-if="form.publishMode==='scheduled'"
-            v-model="scheduleValue"
-            type="datetime-local"
-          ><button
-            type="button"
+            name="publishAt"
+            label="Publication time"
+            required
+            hint="Required when scheduling; choose a local date and time"
+            :errors="validation.errorsFor('publishAt')"
+          >
+            <template #default="{ controlId, describedBy, invalid }">
+              <el-date-picker
+                :id="controlId"
+                v-model="scheduleValue"
+                name="publishAt"
+                type="datetime"
+                value-format="YYYY-MM-DDTHH:mm"
+                format="YYYY-MM-DD HH:mm"
+                :aria-describedby="describedBy"
+                :aria-invalid="invalid"
+                @blur="validation.touch('publishAt', validationInput())"
+                @input="validation.change('publishAt', validationInput())"
+              />
+            </template>
+          </AdminFormField><el-button
+            type="primary"
             :disabled="saving"
             @click="changeState('publish')"
           >
             Publish
-          </button>
+          </el-button>
         </fieldset>
         <div class="actions">
-          <button
-            class="primary"
-            type="submit"
+          <el-button
+            type="primary"
+            native-type="submit"
             :disabled="saving"
           >
             {{ saving?'Saving':'Save' }}
-          </button><button
+          </el-button><el-button
             v-if="currentStatus==='PUBLISHED'"
-            type="button"
             :disabled="saving"
             @click="changeState('archive')"
           >
             Archive
-          </button>
+          </el-button>
         </div>
-      </form>
+      </el-form>
     </AdminPageState>
   </section>
 </template>

@@ -2,10 +2,15 @@
 import { computed, reactive, ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { AdminApiError, type AdminClient } from '../../features/admin/admin-client'
-import { parseTaxonomyCreateForm, parseTaxonomyUpdateForm } from '../../features/admin/taxonomy/taxonomy-form-schema'
+import { taxonomyCreateSchema, taxonomyUpdateSchema } from '../../features/admin/taxonomy/taxonomy-form-schema'
+import { createAdminFormValidation, focusAdminField } from '../../features/admin/admin-form-validation'
+import AdminFormField from '../../features/admin/components/AdminFormField.vue'
 import AdminPageState from '../../features/admin/components/AdminPageState.vue'
+import { useAdminOperationFeedback, type AdminOperation } from '../../features/admin/admin-operation-feedback'
+import { confirmAdminAction } from '../../features/admin/admin-confirmation'
 
 const props = defineProps<{ adminClient: AdminClient; kind: 'category' | 'tag' }>()
+const feedback = useAdminOperationFeedback()
 const title = computed(() => props.kind === 'category' ? 'Categories' : 'Tags')
 const rows = useQuery({
   queryKey: computed(() => ['admin', props.kind === 'category' ? 'categories' : 'tags'] as const),
@@ -16,6 +21,8 @@ const rows = useQuery({
 })
 const createForm = reactive({ name: '', slug: '' })
 const editForm = reactive({ name: '', slug: '', version: 0 })
+const createValidation = createAdminFormValidation(taxonomyCreateSchema)
+const editValidation = createAdminFormValidation(taxonomyUpdateSchema)
 const editingId = ref<string | undefined>()
 const saving = ref(false)
 const errorMessage = ref<string | undefined>()
@@ -33,11 +40,18 @@ function beginEdit(row: { id: string; name: string; slug: string; version: numbe
   editingId.value = row.id
   Object.assign(editForm, { name: row.name, slug: row.slug, version: row.version })
   errorMessage.value = undefined
+  editValidation.resetValidation()
+}
+
+function beginEditById(id: string) {
+  const row = rows.data.value?.find(item => item.id === id)
+  if (row) beginEdit(row)
 }
 
 function cancelEdit() {
   editingId.value = undefined
   errorMessage.value = undefined
+  editValidation.resetValidation()
 }
 
 function conflictMessage(error: unknown): string {
@@ -48,18 +62,41 @@ function conflictMessage(error: unknown): string {
   return 'Unable to save changes'
 }
 
+function operationFor(action: 'create' | 'update' | 'delete'): AdminOperation {
+  if (props.kind === 'category') {
+    if (action === 'create') return 'category.create'
+    if (action === 'update') return 'category.update'
+    return 'category.delete'
+  }
+  if (action === 'create') return 'tag.create'
+  if (action === 'update') return 'tag.update'
+  return 'tag.delete'
+}
+
 async function createRow() {
   if (saving.value) return
-  saving.value = true
   errorMessage.value = undefined
+  const result = createValidation.validateForSubmit({ ...createForm }, ['name', 'slug'])
+  if (!result.success) {
+    errorMessage.value = 'Review the highlighted fields'
+    await focusAdminField(result.firstInvalidField)
+    return
+  }
+  saving.value = true
   try {
-    const input = parseTaxonomyCreateForm(createForm)
+    const input = result.data
     if (props.kind === 'category') await props.adminClient.createCategory(input)
     else await props.adminClient.createTag(input)
+    feedback.succeeded(operationFor('create'))
     Object.assign(createForm, { name: '', slug: '' })
+    createValidation.resetValidation()
     await rows.refetch()
   } catch (error) {
-    errorMessage.value = conflictMessage(error)
+    feedback.failed(operationFor('create'))
+    if (error instanceof AdminApiError && error.fieldErrors) {
+      errorMessage.value = 'Review the highlighted fields'
+      await focusAdminField(createValidation.applyServerErrors(error.fieldErrors))
+    } else errorMessage.value = conflictMessage(error)
   } finally {
     saving.value = false
   }
@@ -67,36 +104,61 @@ async function createRow() {
 
 async function saveRow() {
   if (!editingId.value || saving.value) return
-  saving.value = true
   errorMessage.value = undefined
+  const result = editValidation.validateForSubmit({ ...editForm }, ['name', 'slug'])
+  if (!result.success) {
+    errorMessage.value = 'Review the highlighted fields'
+    await focusAdminField(result.firstInvalidField === 'name' ? 'editName' : 'editSlug')
+    return
+  }
+  saving.value = true
   try {
-    const input = parseTaxonomyUpdateForm(editForm)
+    const input = result.data
     if (props.kind === 'category') await props.adminClient.updateCategory(editingId.value, input)
     else await props.adminClient.updateTag(editingId.value, input)
+    feedback.succeeded(operationFor('update'))
     editingId.value = undefined
     await rows.refetch()
   } catch (error) {
-    errorMessage.value = conflictMessage(error)
+    feedback.failed(operationFor('update'))
+    if (error instanceof AdminApiError && error.fieldErrors) {
+      errorMessage.value = 'Review the highlighted fields'
+      const field = editValidation.applyServerErrors(error.fieldErrors)
+      await focusAdminField(field === 'name' ? 'editName' : 'editSlug')
+    } else errorMessage.value = conflictMessage(error)
   } finally {
     saving.value = false
   }
 }
 
 async function deleteRow(row: { id: string; name: string; articleCount: number; version: number }) {
-  if (saving.value || !globalThis.confirm(
-    `Delete ${row.name}? It is referenced by ${row.articleCount} article(s).`,
-  )) return
+  if (saving.value) return
+  const result = await confirmAdminAction({
+    title: `删除${props.kind === 'category' ? '分类' : '标签'}`,
+    message: `确定删除 ${row.name} 吗？当前有 ${row.articleCount} 篇文章引用。`,
+    confirmButtonText: '删除',
+    cancelButtonText: '取消',
+    type: 'warning',
+  })
+  if (result !== 'confirmed') return
   saving.value = true
   errorMessage.value = undefined
   try {
     if (props.kind === 'category') await props.adminClient.deleteCategory(row.id, row.version)
     else await props.adminClient.deleteTag(row.id, row.version)
+    feedback.succeeded(operationFor('delete'))
     await rows.refetch()
   } catch (error) {
+    feedback.failed(operationFor('delete'))
     errorMessage.value = conflictMessage(error)
   } finally {
     saving.value = false
   }
+}
+
+async function deleteRowById(id: string) {
+  const row = rows.data.value?.find(item => item.id === id)
+  if (row) await deleteRow(row)
 }
 </script>
 
@@ -107,27 +169,58 @@ async function deleteRow(row: { id: string; name: string; articleCount: number; 
       <h1>{{ title }}</h1>
     </header>
 
-    <form
+    <el-form
       class="create-row"
       @submit.prevent="createRow"
     >
-      <label><span>Name</span><input
-        v-model="createForm.name"
+      <AdminFormField
         name="name"
-        maxlength="120"
-      ></label>
-      <label><span>Slug</span><input
-        v-model="createForm.slug"
+        label="Name"
+        required
+        hint="Required; up to 120 characters"
+        :errors="createValidation.errorsFor('name')"
+      >
+        <template #default="{controlId,describedBy,invalid}">
+          <el-input
+            :id="controlId"
+            v-model="createForm.name"
+            name="name"
+            maxlength="120"
+            :aria-describedby="describedBy"
+            :aria-invalid="invalid"
+            @blur="createValidation.touch('name',{...createForm})"
+            @input="createValidation.change('name',{...createForm})"
+          />
+        </template>
+      </AdminFormField>
+      <AdminFormField
         name="slug"
-        maxlength="120"
-      ></label>
-      <button
-        type="submit"
+        label="Slug"
+        required
+        hint="3-120 lowercase letters, numbers, and single hyphens"
+        :errors="createValidation.errorsFor('slug')"
+      >
+        <template #default="{controlId,describedBy,invalid}">
+          <el-input
+            :id="controlId"
+            v-model="createForm.slug"
+            name="slug"
+            maxlength="120"
+            :aria-describedby="describedBy"
+            :aria-invalid="invalid"
+            @blur="createValidation.touch('slug',{...createForm})"
+            @input="createValidation.change('slug',{...createForm})"
+          />
+        </template>
+      </AdminFormField>
+      <el-button
+        type="primary"
+        native-type="submit"
         :disabled="saving"
       >
         Add {{ kind }}
-      </button>
-    </form>
+      </el-button>
+    </el-form>
 
     <p
       v-if="errorMessage"
@@ -142,73 +235,126 @@ async function deleteRow(row: { id: string; name: string; articleCount: number; 
       :empty-label="`No ${title.toLowerCase()}`"
       @retry="rows.refetch()"
     >
-      <div class="taxonomy-list">
-        <div
-          v-for="row in rows.data.value"
-          :key="row.id"
-          class="taxonomy-row"
+      <el-table
+        class="taxonomy-list"
+        :data="rows.data.value ?? []"
+        row-key="id"
+      >
+        <el-table-column
+          label="Taxonomy"
+          min-width="420"
         >
-          <form
-            v-if="editingId === row.id"
-            class="row-editor"
-            data-testid="save-taxonomy"
-            @submit.prevent="saveRow"
-          >
-            <input
-              v-model="editForm.name"
-              name="editName"
-              maxlength="120"
-              aria-label="Name"
+          <template #default="{ row }">
+            <el-form
+              v-if="editingId === row.id"
+              class="row-editor"
+              data-testid="save-taxonomy"
+              @submit.prevent="saveRow"
             >
-            <input
-              v-model="editForm.slug"
-              name="editSlug"
-              maxlength="120"
-              aria-label="Slug"
+              <AdminFormField
+                name="editName"
+                label="Name"
+                required
+                hint="Required; up to 120 characters"
+                :errors="editValidation.errorsFor('name')"
+              >
+                <template #default="{controlId,describedBy,invalid}">
+                  <el-input
+                    :id="controlId"
+                    v-model="editForm.name"
+                    name="editName"
+                    maxlength="120"
+                    :aria-describedby="describedBy"
+                    :aria-invalid="invalid"
+                    @blur="editValidation.touch('name',{...editForm})"
+                    @input="editValidation.change('name',{...editForm})"
+                  />
+                </template>
+              </AdminFormField>
+              <AdminFormField
+                name="editSlug"
+                label="Slug"
+                required
+                hint="3-120 lowercase letters, numbers, and single hyphens"
+                :errors="editValidation.errorsFor('slug')"
+              >
+                <template #default="{controlId,describedBy,invalid}">
+                  <el-input
+                    :id="controlId"
+                    v-model="editForm.slug"
+                    name="editSlug"
+                    maxlength="120"
+                    :aria-describedby="describedBy"
+                    :aria-invalid="invalid"
+                    @blur="editValidation.touch('slug',{...editForm})"
+                    @input="editValidation.change('slug',{...editForm})"
+                  />
+                </template>
+              </AdminFormField>
+              <div class="row-actions">
+                <el-button
+                  type="primary"
+                  native-type="submit"
+                  :disabled="saving"
+                >
+                  Save
+                </el-button>
+                <el-button
+                  :disabled="saving"
+                  @click="cancelEdit"
+                >
+                  Cancel
+                </el-button>
+              </div>
+            </el-form>
+            <div
+              v-else
+              class="row-name"
             >
-            <span>{{ row.articleCount }} refs</span>
-            <div class="row-actions">
-              <button
-                type="submit"
-                :disabled="saving"
-              >
-                Save
-              </button>
-              <button
-                type="button"
-                :disabled="saving"
-                @click="cancelEdit"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-          <template v-else>
-            <div class="row-name">
               <strong>{{ row.name }}</strong><span>{{ row.slug }}</span>
             </div>
-            <span>{{ row.articleCount }} refs</span>
-            <div class="row-actions">
-              <button
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="References"
+          width="130"
+        >
+          <template #default="{ row }">
+            {{ row.articleCount }} refs
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="Actions"
+          width="180"
+          fixed="right"
+        >
+          <template #default="{ row }">
+            <div
+              v-if="editingId !== row.id"
+              class="row-actions"
+            >
+              <el-button
                 data-testid="edit-taxonomy"
-                type="button"
+                size="small"
                 :disabled="saving"
-                @click="beginEdit(row)"
+                @click="beginEditById(row.id)"
               >
                 Edit
-              </button>
-              <button
+              </el-button>
+              <el-button
                 data-testid="delete-taxonomy"
-                type="button"
+                size="small"
+                type="danger"
+                plain
                 :disabled="saving"
-                @click="deleteRow(row)"
+                @click="deleteRowById(row.id)"
               >
                 Delete
-              </button>
+              </el-button>
             </div>
           </template>
-        </div>
-      </div>
+        </el-table-column>
+      </el-table>
     </AdminPageState>
   </section>
 </template>

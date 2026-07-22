@@ -1,8 +1,13 @@
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
+import { createPinia, type Pinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { AdminApiError, type AdminClient } from '../admin-client'
 import AdminTaxonomyView from '../../../views/admin/AdminTaxonomyView.vue'
+import { useOperationFeedbackStore } from '../../../shared/feedback/operation-feedback'
+
+const confirmAdminAction = vi.hoisted(() => vi.fn())
+vi.mock('../admin-confirmation', () => ({ confirmAdminAction }))
 
 const id = '2d65e30a-f450-4f8e-8ed9-5f36b2f7c322'
 const instant = '2026-07-20T10:00:00Z'
@@ -19,11 +24,15 @@ function client(overrides: Partial<AdminClient> = {}): AdminClient {
   } as AdminClient
 }
 
-function mountView(adminClient: AdminClient, kind: 'category' | 'tag' = 'category') {
+function mountView(
+  adminClient: AdminClient,
+  kind: 'category' | 'tag' = 'category',
+  pinia: Pinia = createPinia(),
+) {
   return mount(AdminTaxonomyView, {
     props: { adminClient, kind },
     global: {
-      plugins: [[VueQueryPlugin, { queryClient: new QueryClient() }]],
+      plugins: [[VueQueryPlugin, { queryClient: new QueryClient() }], pinia],
       stubs: { RouterLink: { template: '<a><slot /></a>' } },
     },
   })
@@ -32,21 +41,31 @@ function mountView(adminClient: AdminClient, kind: 'category' | 'tag' = 'categor
 describe('AdminTaxonomyView', () => {
   it('loads, creates, edits and confirms deletion for categories', async () => {
     const adminClient = client()
-    vi.stubGlobal('confirm', vi.fn().mockReturnValue(true))
-    const wrapper = mountView(adminClient)
+    const pinia = createPinia()
+    confirmAdminAction.mockResolvedValue('confirmed')
+    const wrapper = mountView(adminClient, 'category', pinia)
     await vi.waitFor(() => expect(wrapper.text()).toContain('Java'))
+    expect(wrapper.find('.el-form').exists()).toBe(true)
+    expect(wrapper.find('.el-table').exists()).toBe(true)
+    expect(wrapper.find('.el-input').exists()).toBe(true)
+    expect(wrapper.find('.el-button').exists()).toBe(true)
 
     await wrapper.get('[data-testid="edit-taxonomy"]').trigger('click')
     await wrapper.get('input[name="editName"]').setValue('JVM')
     await wrapper.get('[data-testid="save-taxonomy"]').trigger('submit')
     await vi.waitFor(() => expect(adminClient.updateCategory).toHaveBeenCalled())
     await vi.waitFor(() => expect(wrapper.find('[data-testid="save-taxonomy"]').exists()).toBe(false))
+    expect(useOperationFeedbackStore(pinia).messages.at(-1)?.message).toBe('分类保存成功')
     await vi.waitFor(() => expect(wrapper.get('[data-testid="delete-taxonomy"]').attributes('disabled'))
       .toBeUndefined())
 
     await wrapper.get('[data-testid="delete-taxonomy"]').trigger('click')
-    expect(globalThis.confirm).toHaveBeenCalledWith(expect.stringContaining('2'))
+    expect(confirmAdminAction).toHaveBeenCalledWith(expect.objectContaining({
+      message: expect.stringContaining('2'),
+    }))
     expect(adminClient.deleteCategory).toHaveBeenCalledWith(id, 0)
+    await vi.waitFor(() => expect(useOperationFeedbackStore(pinia).messages.at(-1)?.message)
+      .toBe('分类删除成功'))
   })
 
   it.each([

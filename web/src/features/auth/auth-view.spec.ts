@@ -1,4 +1,6 @@
 import { VueQueryPlugin, QueryClient } from '@tanstack/vue-query'
+import { ElMessage } from 'element-plus'
+import { createPinia } from 'pinia'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory } from 'vue-router'
@@ -70,6 +72,8 @@ describe('LoginView', () => {
 })
 
 describe('authenticated navigation', () => {
+  afterEach(() => ElMessage.closeAll())
+
   it('shows admin navigation and logs out through the auth client', async () => {
     const client = authClient(adminState)
     vi.mocked(client.getAuthState)
@@ -84,7 +88,7 @@ describe('authenticated navigation', () => {
 
     const wrapper = mount(App, {
       props: { authClient: client },
-      global: { plugins: [router, [VueQueryPlugin, { queryClient }]] },
+      global: { plugins: [router, [VueQueryPlugin, { queryClient }], createPinia()] },
     })
     await flushPromises()
 
@@ -94,6 +98,7 @@ describe('authenticated navigation', () => {
 
     expect(client.logout).toHaveBeenCalledTimes(1)
     expect(wrapper.get('[data-testid="login-link"]').attributes('href')).toBe('/login')
+    expect(document.body.querySelector('.el-message--success')?.textContent).toContain('退出登录成功')
     wrapper.unmount()
   })
 })

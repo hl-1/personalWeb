@@ -26,12 +26,11 @@ defineEmits<{ retry: [] }>()
     class="admin-state admin-state-error"
   >
     <span>Unable to load this page</span>
-    <button
-      type="button"
+    <el-button
       @click="$emit('retry')"
     >
       Try again
-    </button>
+    </el-button>
   </div>
   <div
     v-else-if="state === 'unauthorized'"
@@ -68,12 +67,4 @@ defineEmits<{ retry: [] }>()
   color: #842f29;
 }
 
-button {
-  min-height: 36px;
-  padding: 7px 12px;
-  border: 1px solid #9da9a1;
-  border-radius: 4px;
-  background: #ffffff;
-  cursor: pointer;
-}
 </style>

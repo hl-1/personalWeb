@@ -1,30 +1,36 @@
 import { z } from 'zod'
+import {
+  adminSlugSchema,
+  limitedTextSchema,
+  nullableVersionSchema,
+  optionalTextSchema,
+  requiredTextSchema,
+  utcInstantSchema,
+} from '../admin-form-rules'
 
-const instantSchema = z.string().regex(
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/,
-  'must be a UTC ISO-8601 instant',
-)
-const tagIdsSchema = z.array(z.string().uuid()).max(10).superRefine((values, context) => {
+const tagIdsSchema = z.array(z.string().uuid())
+  .max(10, 'Select at most 10 tags')
+  .superRefine((values, context) => {
   if (new Set(values).size !== values.length) {
-    context.addIssue({ code: 'custom', message: 'must not contain duplicate tags' })
+    context.addIssue({ code: 'custom', message: 'Do not select duplicate tags' })
   }
 })
 
-const articleFormSchema = z.strictObject({
-  slug: z.string().min(1).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
-  title: z.string().trim().min(1).max(180),
-  summary: z.string().trim().min(1).max(500),
-  bodyMarkdown: z.string().max(200_000),
+export const articleFormSchema = z.strictObject({
+  slug: adminSlugSchema,
+  title: requiredTextSchema(180),
+  summary: requiredTextSchema(500),
+  bodyMarkdown: limitedTextSchema(200_000),
   categoryId: z.string().uuid().nullable(),
   tagIds: tagIdsSchema,
-  seoTitle: z.string().max(70).nullable(),
-  seoDescription: z.string().max(160).nullable(),
-  version: z.number().int().min(0).nullable(),
+  seoTitle: optionalTextSchema(70),
+  seoDescription: optionalTextSchema(160),
+  version: nullableVersionSchema,
   publishMode: z.enum(['draft', 'now', 'scheduled']),
-  publishAt: instantSchema.nullable(),
+  publishAt: utcInstantSchema.nullable(),
 }).superRefine((value, context) => {
   if (value.publishMode === 'scheduled' && value.publishAt === null) {
-    context.addIssue({ code: 'custom', path: ['publishAt'], message: 'is required' })
+    context.addIssue({ code: 'custom', path: ['publishAt'], message: 'Choose a publication date and time' })
   }
 })
 

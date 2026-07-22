@@ -291,6 +291,14 @@ class AdminArticleApiIntegrationTest {
         assertFalse(validation.getResponse().getContentAsString().contains(SECRET_MARKDOWN));
         assertTrue(body(validation).containsKey("fieldErrors"));
 
+        Map<String, Object> shortSlug = articleRequest("valid-slug");
+        shortSlug.put("slug", "ab");
+        MvcResult shortSlugValidation = expectProblem(admin(post(ARTICLES_PATH), true)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json(shortSlug)),
+                400, "validation_failed");
+        assertTrue(((Map<?, ?>) body(shortSlugValidation).get("fieldErrors")).containsKey("slug"));
+
         Map<String, Object> created = createArticle("invalid-time-article");
         String id = (String) created.get("id");
         long version = ((Number) created.get("version")).longValue();

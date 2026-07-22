@@ -1,18 +1,19 @@
 import { z } from 'zod'
+import { adminSlugSchema, nonNegativeIntegerSchema, requiredTextSchema } from '../admin-form-rules'
 
-const createSchema = z.strictObject({
-  name: z.string().trim().min(1).max(120),
-  slug: z.string().min(3).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+export const taxonomyCreateSchema = z.strictObject({
+  name: requiredTextSchema(120),
+  slug: adminSlugSchema,
 })
-const updateSchema = createSchema.extend({ version: z.number().int().min(0) })
+export const taxonomyUpdateSchema = taxonomyCreateSchema.extend({ version: nonNegativeIntegerSchema })
 
-export type TaxonomyCreateForm = z.infer<typeof createSchema>
-export type TaxonomyUpdateForm = z.infer<typeof updateSchema>
+export type TaxonomyCreateForm = z.infer<typeof taxonomyCreateSchema>
+export type TaxonomyUpdateForm = z.infer<typeof taxonomyUpdateSchema>
 
 export function parseTaxonomyCreateForm(input: unknown): TaxonomyCreateForm {
-  return createSchema.parse(input)
+  return taxonomyCreateSchema.parse(input)
 }
 
 export function parseTaxonomyUpdateForm(input: unknown): TaxonomyUpdateForm {
-  return updateSchema.parse(input)
+  return taxonomyUpdateSchema.parse(input)
 }
