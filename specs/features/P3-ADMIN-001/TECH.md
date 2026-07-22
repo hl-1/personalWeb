@@ -185,7 +185,7 @@ Raw admin Markdown
 - Element Plus 只替换管理 UI 原语，不改变 Zod runtime schema、表单 validation、API client、TanStack Query、Pinia 草稿或路由授权契约。
 - `admin-form-rules.ts` 集中维护管理表单共用的 slug、必填文本、长度、HTTPS URL、日期、可选空值和非负整数 schema，避免各页面复制规则。
 - `admin-form-validation.ts` 统一维护 touched、submit、Zod issue、后端 `fieldErrors`、字段聚焦和修正后清除行为。
-- `AdminFormField.vue` 统一渲染必填标记、常驻规则提示、首个字段错误，以及 label、`aria-describedby`、`aria-invalid` 的关联。
+- `AdminFormField.vue` 统一渲染单一且对辅助技术隐藏的必填标记、常驻规则提示、首个字段错误，以及 label、`aria-describedby`、`aria-invalid` 的关联；不得同时启用 Element Plus 的第二个 required marker。
 - `admin-schema.ts` 使用 strict Zod 校验 UUID、Instant、日期、状态、HTTPS URL、分页和各资源响应。
 - 解析后使用显式 mapper 构造文章、taxonomy、项目、简介、技能、经历和预览业务对象。
 - 表单 schema 独立验证可编辑字段及合法枚举/集合；API 响应进入表单时只复制允许字段，不传递 id、时间戳等未知属性。

@@ -36,7 +36,6 @@ const describedBy = computed(() => [
   <el-form-item
     class="admin-form-field"
     :data-field="name"
-    :required="required"
     :validate-status="invalid ? 'error' : ''"
   >
     <template #label>

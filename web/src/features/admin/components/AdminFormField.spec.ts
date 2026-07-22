@@ -28,6 +28,7 @@ describe('AdminFormField', () => {
 
     const input = wrapper.get('input')
     expect(wrapper.find('.el-form-item').exists()).toBe(true)
+    expect(wrapper.get('.el-form-item').classes()).not.toContain('is-required')
     expect(wrapper.get('label').attributes('for')).toBe(input.attributes('id'))
     expect(wrapper.get('[data-testid="field-required"]').text()).toBe('*')
     expect(wrapper.get('[data-testid="field-hint"]').text())
