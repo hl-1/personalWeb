@@ -21,6 +21,7 @@ describe('AdminLayout', () => {
       slots: { default: '<h1>A very long administrative page heading that wraps safely</h1>' },
     })
     expect(wrapper.get('[data-testid="admin-layout"]').text()).toContain('Administration')
+    expect(wrapper.find('.el-menu').exists()).toBe(true)
     expect(wrapper.findAll('[data-testid="admin-nav-link"]')).toHaveLength(8)
     expect(wrapper.get('[data-testid="admin-exit-link"]').attributes('href')).toBe('/')
   })
@@ -39,6 +40,7 @@ describe('AdminPageState', () => {
       global: { plugins: [await routerAt()] },
     })
     expect(wrapper.text()).toContain(marker)
+    if (state === 'error') expect(wrapper.find('.el-button').exists()).toBe(true)
   })
 
   it('renders ready content without wrapping it in a card', async () => {

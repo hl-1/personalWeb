@@ -15,6 +15,7 @@ describe('article form schema', () => {
 
   it.each([
     ['slug', { ...valid, slug: 'Bad Slug' }],
+    ['short slug', { ...valid, slug: 'ab' }],
     ['title', { ...valid, title: ' ' }],
     ['summary', { ...valid, summary: 'x'.repeat(501) }],
     ['bodyMarkdown', { ...valid, bodyMarkdown: 'x'.repeat(200_001) }],

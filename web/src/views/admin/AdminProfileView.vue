@@ -3,23 +3,36 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { AdminApiError, type AdminClient } from '../../features/admin/admin-client'
 import type { AdminProfile } from '../../features/admin/admin-schema'
-import { parseProfileForm, type ProfileForm } from '../../features/admin/portfolio/portfolio-form-schema'
+import { profileFormSchema, type ProfileForm } from '../../features/admin/portfolio/portfolio-form-schema'
+import { createAdminFormValidation, focusAdminField } from '../../features/admin/admin-form-validation'
+import AdminFormField from '../../features/admin/components/AdminFormField.vue'
 import AdminPageState from '../../features/admin/components/AdminPageState.vue'
 import MarkdownEditor from '../../features/admin/components/MarkdownEditor.vue'
+import { useAdminOperationFeedback } from '../../features/admin/admin-operation-feedback'
 const props=defineProps<{adminClient:AdminClient}>()
+const feedback=useAdminOperationFeedback()
 const profile=useQuery({queryKey:['admin','profile'],queryFn:()=>props.adminClient.getProfile(),retry:false})
 const form=reactive<ProfileForm>({displayName:'',headline:'',bioMarkdown:'',seoDescription:null,version:null})
+const validation=createAdminFormValidation(profileFormSchema)
+const fieldOrder=['displayName','headline','bioMarkdown','seoDescription']
 const saving=ref(false);const stale=ref(false);const errorMessage=ref<string>();const missing=computed(()=>profile.error.value instanceof AdminApiError&&profile.error.value.code==='not_found')
-function applyProfile(value:AdminProfile){Object.assign(form,{displayName:value.displayName,headline:value.headline,bioMarkdown:value.bioMarkdown,seoDescription:value.seoDescription,version:value.version})}
+function validationInput(){return{...form}}
+function applyProfile(value:AdminProfile){Object.assign(form,{displayName:value.displayName,headline:value.headline,bioMarkdown:value.bioMarkdown,seoDescription:value.seoDescription,version:value.version});validation.resetValidation()}
 watch(profile.data,(value)=>{if(value)applyProfile(value)},{immediate:true})
 const state=computed<'loading'|'error'|'unauthorized'|'forbidden'|'ready'>(()=>{
   if(profile.isPending.value)return'loading';const error=profile.error.value
   if(missing.value)return'ready';if(error instanceof AdminApiError&&error.kind==='unauthorized')return'unauthorized'
   if(error instanceof AdminApiError&&error.kind==='forbidden')return'forbidden';return profile.isError.value?'error':'ready'
 })
-async function save(){if(saving.value)return;saving.value=true;stale.value=false;errorMessage.value=undefined
-  try{const saved=await props.adminClient.upsertProfile(parseProfileForm(form));applyProfile(saved)}
-  catch(error){if(error instanceof AdminApiError&&error.code==='stale_version')stale.value=true;else errorMessage.value='Unable to save profile'}finally{saving.value=false}}
+async function save(){if(saving.value)return;stale.value=false;errorMessage.value=undefined
+  const result=validation.validateForSubmit(validationInput(),fieldOrder)
+  if(!result.success){errorMessage.value='Review the highlighted fields';await focusAdminField(result.firstInvalidField);return}
+  saving.value=true
+  const operation=result.data.version===null?'profile.create':'profile.update'
+  try{const saved=await props.adminClient.upsertProfile(result.data);applyProfile(saved);feedback.succeeded(operation)}
+  catch(error){feedback.failed(operation);if(error instanceof AdminApiError&&error.code==='stale_version')stale.value=true
+    else if(error instanceof AdminApiError&&error.fieldErrors){errorMessage.value='Review the highlighted fields';await focusAdminField(validation.applyServerErrors(error.fieldErrors))}
+    else errorMessage.value='Unable to save profile'}finally{saving.value=false}}
 async function reload(){const result=await profile.refetch();if(result.data){applyProfile(result.data);stale.value=false}}
 </script>
 <template>
@@ -31,7 +44,7 @@ async function reload(){const result=await profile.refetch();if(result.data){app
       :state="state"
       @retry="profile.refetch()"
     >
-      <form
+      <el-form
         data-testid="save-profile"
         class="form"
         @submit.prevent="save"
@@ -40,12 +53,11 @@ async function reload(){const result=await profile.refetch();if(result.data){app
           v-if="stale"
           class="alert"
         >
-          The profile changed on the server.<button
-            type="button"
+          The profile changed on the server.<el-button
             @click="reload"
           >
             Reload server profile
-          </button>
+          </el-button>
         </div>
         <p
           v-if="errorMessage"
@@ -53,33 +65,92 @@ async function reload(){const result=await profile.refetch();if(result.data){app
         >
           {{ errorMessage }}
         </p>
-        <label><span>Display name</span><input
-          v-model="form.displayName"
+        <AdminFormField
           name="displayName"
-          maxlength="120"
-        ></label>
-        <label><span>Headline</span><input
-          v-model="form.headline"
+          label="Display name"
+          required
+          hint="Required; up to 120 characters"
+          :errors="validation.errorsFor('displayName')"
+        >
+          <template #default="{controlId,describedBy,invalid}">
+            <el-input
+              :id="controlId"
+              v-model="form.displayName"
+              name="displayName"
+              maxlength="120"
+              :aria-describedby="describedBy"
+              :aria-invalid="invalid"
+              @blur="validation.touch('displayName',validationInput())"
+              @input="validation.change('displayName',validationInput())"
+            />
+          </template>
+        </AdminFormField>
+        <AdminFormField
           name="headline"
-          maxlength="180"
-        ></label>
-        <label><span>Biography</span><MarkdownEditor
-          v-model="form.bioMarkdown"
-          :preview="adminClient.previewArticle"
-        /></label>
-        <label><span>SEO description</span><input
-          v-model="form.seoDescription"
+          label="Headline"
+          required
+          hint="Required; up to 180 characters"
+          :errors="validation.errorsFor('headline')"
+        >
+          <template #default="{controlId,describedBy,invalid}">
+            <el-input
+              :id="controlId"
+              v-model="form.headline"
+              name="headline"
+              maxlength="180"
+              :aria-describedby="describedBy"
+              :aria-invalid="invalid"
+              @blur="validation.touch('headline',validationInput())"
+              @input="validation.change('headline',validationInput())"
+            />
+          </template>
+        </AdminFormField>
+        <AdminFormField
+          name="bioMarkdown"
+          label="Biography"
+          hint="Optional; up to 50,000 characters"
+          :errors="validation.errorsFor('bioMarkdown')"
+        >
+          <template #default="{controlId,describedBy,invalid}">
+            <MarkdownEditor
+              :model-value="form.bioMarkdown"
+              name="bioMarkdown"
+              :control-id="controlId"
+              :described-by="describedBy"
+              :invalid="invalid"
+              :preview="adminClient.previewArticle"
+              @update:model-value="form.bioMarkdown=$event;validation.change('bioMarkdown',validationInput())"
+              @blur="validation.touch('bioMarkdown',validationInput())"
+            />
+          </template>
+        </AdminFormField>
+        <AdminFormField
           name="seoDescription"
-          maxlength="160"
-        ></label>
-        <button
-          class="primary"
-          type="submit"
+          label="SEO description"
+          hint="Optional; up to 160 characters"
+          :errors="validation.errorsFor('seoDescription')"
+        >
+          <template #default="{controlId,describedBy,invalid}">
+            <el-input
+              :id="controlId"
+              v-model="form.seoDescription"
+              name="seoDescription"
+              maxlength="160"
+              :aria-describedby="describedBy"
+              :aria-invalid="invalid"
+              @blur="validation.touch('seoDescription',validationInput())"
+              @input="validation.change('seoDescription',validationInput())"
+            />
+          </template>
+        </AdminFormField>
+        <el-button
+          type="primary"
+          native-type="submit"
           :disabled="saving"
         >
           {{ saving?'Saving':'Save profile' }}
-        </button>
-      </form>
+        </el-button>
+      </el-form>
     </AdminPageState>
   </section>
 </template>

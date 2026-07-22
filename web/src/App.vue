@@ -3,16 +3,26 @@ import { computed } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import type { AuthClient } from './features/auth/auth-client'
 import { useAuthLogout, useAuthQuery } from './features/auth/auth-query'
+import { useOperationFeedbackStore } from './shared/feedback/operation-feedback'
+import './features/admin/admin-element-theme.css'
 
 const props = defineProps<{ authClient: AuthClient }>()
 const route = useRoute()
 const authQuery = useAuthQuery(props.authClient)
 const logout = useAuthLogout(props.authClient)
+const feedback = useOperationFeedbackStore()
 const currentUser = computed(() => !logout.isSuccess.value && authQuery.data.value?.authenticated
   ? authQuery.data.value.user
   : null)
 const isAdmin = computed(() => currentUser.value?.roles.includes('ADMIN') ?? false)
 const isAdminRoute = computed(() => route.matched.some((record) => record.meta.admin === true))
+
+function signOut() {
+  logout.mutate(undefined, {
+    onSuccess: () => feedback.success('退出登录成功'),
+    onError: () => feedback.error('退出登录失败'),
+  })
+}
 </script>
 
 <template>
@@ -58,7 +68,7 @@ const isAdminRoute = computed(() => route.matched.some((record) => record.meta.a
           data-testid="logout-button"
           type="button"
           :disabled="logout.isPending.value"
-          @click="logout.mutate()"
+          @click="signOut"
         >
           Sign out
         </button>

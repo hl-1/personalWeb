@@ -1,0 +1,40 @@
+@import 'element-plus/theme-chalk/el-message.css';
+@import 'element-plus/theme-chalk/el-message-box.css';
+
+.admin-layout,
+.el-message,
+.el-message-box {
+  --el-color-primary: #2f7758;
+  --el-color-primary-light-3: #659b7f;
+  --el-color-primary-light-5: #8fbaa2;
+  --el-color-primary-light-7: #bdd7c8;
+  --el-color-primary-light-8: #d5e6dc;
+  --el-color-primary-light-9: #edf5f0;
+  --el-color-primary-dark-2: #185c40;
+  --el-color-danger: #b23a32;
+  --el-border-radius-base: 5px;
+  --el-border-radius-small: 4px;
+  --el-font-size-base: 14px;
+  --el-text-color-primary: #1e2421;
+  --el-text-color-regular: #3f4a44;
+  --el-text-color-secondary: #68736c;
+  --el-border-color: #aeb8b1;
+  --el-border-color-light: #d8dfda;
+  --el-fill-color-light: #f4f6f4;
+}
+
+.admin-layout .el-button {
+  font-weight: 700;
+}
+
+.admin-layout .el-input__wrapper,
+.admin-layout .el-select__wrapper,
+.admin-layout .el-textarea__inner {
+  box-shadow: 0 0 0 1px var(--el-border-color) inset;
+}
+
+.admin-layout .el-input__wrapper.is-focus,
+.admin-layout .el-select__wrapper.is-focused,
+.admin-layout .el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
+}

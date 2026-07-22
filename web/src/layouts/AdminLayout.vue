@@ -11,19 +11,21 @@
         <span class="admin-brand-mark">SS</span>
         <span>Administration</span>
       </RouterLink>
-      <nav
+      <el-menu
         class="admin-nav"
         aria-label="Administration"
+        router
+        :default-active="$route.path"
       >
-        <RouterLink
+        <el-menu-item
           v-for="item in navigation"
           :key="item.to"
-          :to="item.to"
+          :index="item.to"
           data-testid="admin-nav-link"
         >
           {{ item.label }}
-        </RouterLink>
-      </nav>
+        </el-menu-item>
+      </el-menu>
       <RouterLink
         class="admin-exit"
         data-testid="admin-exit-link"
@@ -94,11 +96,16 @@ const navigation = [
 .admin-nav {
   display: grid;
   gap: 3px;
+  border-right: 0;
+  background: transparent;
 }
 
-.admin-nav a,
+.admin-nav :deep(.el-menu-item),
 .admin-exit {
   min-width: 0;
+  height: auto;
+  min-height: 38px;
+  line-height: 1.35;
   padding: 9px 10px;
   color: #cbd4ce;
   font-size: 14px;
@@ -106,9 +113,14 @@ const navigation = [
   overflow-wrap: anywhere;
 }
 
-.admin-nav a.router-link-exact-active,
-.admin-nav a.router-link-active:not([href='/admin']) {
+.admin-nav :deep(.el-menu-item.is-active) {
   background: #354139;
+  color: #ffffff;
+}
+
+.admin-nav :deep(.el-menu-item:hover),
+.admin-nav :deep(.el-menu-item:focus) {
+  background: #2c352f;
   color: #ffffff;
 }
 
@@ -148,7 +160,7 @@ const navigation = [
     overscroll-behavior-inline: contain;
   }
 
-  .admin-nav a {
+  .admin-nav :deep(.el-menu-item) {
     flex: 0 0 auto;
     white-space: nowrap;
   }

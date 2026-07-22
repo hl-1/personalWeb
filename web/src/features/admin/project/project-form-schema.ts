@@ -1,33 +1,31 @@
 import { z } from 'zod'
+import {
+  adminSlugSchema,
+  limitedTextSchema,
+  nonNegativeIntegerSchema,
+  nullableVersionSchema,
+  optionalHttpsUrlSchema,
+  requiredTextSchema,
+  utcInstantSchema,
+} from '../admin-form-rules'
 
-const httpsUrl = z.string().max(2048).superRefine((value, context) => {
-  try {
-    const url = new URL(value)
-    if (url.protocol !== 'https:' || !url.hostname || url.username || url.password) {
-      context.addIssue({ code: 'custom', message: 'must be an HTTPS URL without credentials' })
-    }
-  } catch {
-    context.addIssue({ code: 'custom', message: 'must be an HTTPS URL without credentials' })
-  }
-})
-const instant = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/)
-const schema = z.strictObject({
-  slug: z.string().min(3).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
-  title: z.string().trim().min(1).max(180),
-  summary: z.string().trim().min(1).max(500),
-  descriptionMarkdown: z.string().max(100_000),
-  projectUrl: httpsUrl.nullable(),
-  repositoryUrl: httpsUrl.nullable(),
+export const projectFormSchema = z.strictObject({
+  slug: adminSlugSchema,
+  title: requiredTextSchema(180),
+  summary: requiredTextSchema(500),
+  descriptionMarkdown: limitedTextSchema(100_000),
+  projectUrl: optionalHttpsUrlSchema,
+  repositoryUrl: optionalHttpsUrlSchema,
   featured: z.boolean(),
-  sortOrder: z.number().int().min(0),
-  version: z.number().int().min(0).nullable(),
+  sortOrder: nonNegativeIntegerSchema,
+  version: nullableVersionSchema,
   publishMode: z.enum(['draft', 'now', 'scheduled']),
-  publishAt: instant.nullable(),
+  publishAt: utcInstantSchema.nullable(),
 }).superRefine((value, context) => {
   if (value.publishMode === 'scheduled' && value.publishAt === null) {
-    context.addIssue({ code: 'custom', path: ['publishAt'], message: 'is required' })
+    context.addIssue({ code: 'custom', path: ['publishAt'], message: 'Choose a publication date and time' })
   }
 })
 
-export type ProjectForm = z.infer<typeof schema>
-export function parseProjectForm(input: unknown): ProjectForm { return schema.parse(input) }
+export type ProjectForm = z.infer<typeof projectFormSchema>
+export function parseProjectForm(input: unknown): ProjectForm { return projectFormSchema.parse(input) }

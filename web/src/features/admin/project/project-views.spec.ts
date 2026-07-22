@@ -6,6 +6,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { AdminApiError, type AdminClient } from '../admin-client'
 import AdminProjectListView from '../../../views/admin/AdminProjectListView.vue'
 import AdminProjectEditView from '../../../views/admin/AdminProjectEditView.vue'
+import { useOperationFeedbackStore } from '../../../shared/feedback/operation-feedback'
 
 const id = '2d65e30a-f450-4f8e-8ed9-5f36b2f7c322'
 const instant = '2026-07-20T10:00:00Z'
@@ -35,12 +36,20 @@ async function plugins(path: string) {
 
 describe('project administration views', () => {
   it('renders draft projects with publish and delete actions', async () => {
+    const adminClient = client()
     const p = await plugins('/admin/portfolio/projects')
-    const wrapper = mount(AdminProjectListView, { props: { adminClient: client() },
+    const wrapper = mount(AdminProjectListView, { props: { adminClient },
       global: { plugins: [p.router, [VueQueryPlugin, { queryClient: p.queryClient }], p.pinia] } })
     await vi.waitFor(() => expect(wrapper.find('[data-testid="project-list"]').exists()).toBe(true))
+    expect(wrapper.find('.el-table').exists()).toBe(true)
+    expect(wrapper.find('.el-select').exists()).toBe(true)
+    expect(wrapper.find('.el-input').exists()).toBe(true)
+    expect(wrapper.find('.el-button').exists()).toBe(true)
     expect(wrapper.find('[data-testid="publish-project"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="archive-project"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="publish-project"]').trigger('click')
+    await vi.waitFor(() => expect(adminClient.publishProject).toHaveBeenCalled())
+    expect(useOperationFeedbackStore(p.pinia).messages.at(-1)?.message).toBe('项目发布成功')
   })
 
   it('preserves long input after stale_version', async () => {
@@ -49,6 +58,7 @@ describe('project administration views', () => {
     const wrapper = mount(AdminProjectEditView, { props: { adminClient: client({ updateProject }), id },
       global: { plugins: [p.router, [VueQueryPlugin, { queryClient: p.queryClient }], p.pinia] } })
     await vi.waitFor(() => expect(wrapper.get('input[name="title"]').element).toHaveProperty('value', 'Project'))
+    expect(wrapper.find('.el-form').exists()).toBe(true)
     const longTitle = 'A project title that remains visible and does not overflow'
     await wrapper.get('input[name="title"]').setValue(longTitle)
     await wrapper.get('[data-testid="save-project"]').trigger('submit')

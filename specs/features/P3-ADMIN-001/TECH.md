@@ -4,9 +4,10 @@ title: StudyStack 管理后台技术规格
 phase: P3
 status: awaiting-user-acceptance
 created: 2026-07-21
-updated: 2026-07-21
+updated: 2026-07-22
 product_ref: specs/features/P3-ADMIN-001/PRODUCT.md
 implementation_ref: specs/features/P3-ADMIN-001/IMPLEMENTATION_PLAN.md
+migration_ref: specs/features/P3-ADMIN-001/ELEMENT_PLUS_MIGRATION_PLAN.md
 design_refs:
   - C:/softWare/project/workDoc/java-personal-website-design.md
   - docs/AI-PROJECT-DELIVERY-PLAN.md
@@ -157,6 +158,7 @@ profile 首次 PUT 接受 `version=null`，已有单例必须提交非负 versio
 - 文章/项目列表 DTO 不包含 Markdown 正文，详情 DTO 包含原始 Markdown 供管理员继续编辑。
 - 创建响应返回 201 和 `Location`；读取、更新和状态命令返回 200；删除返回 204。
 - Bean Validation 在 web 边界校验长度、格式、枚举、日期、URL、分页和集合数量；application/domain/database 继续验证不变量。
+- 文章 Create/Update DTO 的 slug 长度固定为 3 至 120，使短 slug 在 Bean Validation 层产生 `fieldErrors.slug`，同时保留共享 `SlugPolicy` 作为最终防线。
 - `AdminApiExceptionHandler` 只映射明确业务 failure，产生 `type`、`title`、`status`、`detail`、`instance` 和 `code`。
 - 固定业务码为 `validation_failed`、`not_found`、`duplicate_slug`、`stale_version`、`invalid_state_transition`、`taxonomy_in_use` 和 `draft_delete_only`；安全层另提供 `forbidden` 与 `csrf_failed`。
 - `fieldErrors` 使用字段到消息数组的结构；未知数据库或程序错误不伪装成业务冲突。
@@ -178,12 +180,24 @@ Raw admin Markdown
 
 ## 10. Frontend Runtime And Data Flow
 
+- Element Plus 通过 Vite resolver 按需导入，主题变量与控件限定于管理体验；公共页面保留原有控件，仅允许共享操作反馈服务调用 `ElMessage`。
+- `element-plus-plugins.ts` 统一配置组件与 composable resolver；开发构建生成 `auto-imports.d.ts` 和 `components.d.ts`，测试配置复用 resolver 但不改写类型文件。
+- Element Plus 只替换管理 UI 原语，不改变 Zod runtime schema、表单 validation、API client、TanStack Query、Pinia 草稿或路由授权契约。
+- `admin-form-rules.ts` 集中维护管理表单共用的 slug、必填文本、长度、HTTPS URL、日期、可选空值和非负整数 schema，避免各页面复制规则。
+- `admin-form-validation.ts` 统一维护 touched、submit、Zod issue、后端 `fieldErrors`、字段聚焦和修正后清除行为。
+- `AdminFormField.vue` 统一渲染必填标记、常驻规则提示、首个字段错误，以及 label、`aria-describedby`、`aria-invalid` 的关联。
 - `admin-schema.ts` 使用 strict Zod 校验 UUID、Instant、日期、状态、HTTPS URL、分页和各资源响应。
 - 解析后使用显式 mapper 构造文章、taxonomy、项目、简介、技能、经历和预览业务对象。
 - 表单 schema 独立验证可编辑字段及合法枚举/集合；API 响应进入表单时只复制允许字段，不传递 id、时间戳等未知属性。
 - `admin-client.ts` 只请求同源 `/api/v1/admin/**`，复用 Session 与 CSRF，集中解析 ProblemDetail。
 - `admin-query.ts` 以 `['admin']` 为根 key，为列表、详情和 taxonomy 建立稳定子 key；成功写入后只失效相关查询。
+- `operation-feedback.ts` 使用 Pinia 按应用实例维护短时操作记录，并统一调用 Element Plus `ElMessage` 显示可关闭的成功或失败通知；定时清理只影响本地记录，不改变写请求结果。
+- `admin-operation-feedback.ts` 集中维护允许的管理写操作键及中文成败文案；页面只能在已校验实体、Location 或 `204` 响应成功后发布成功通知，后端 DTO 和 OpenAPI 不增加展示文案字段。
+- `admin-confirmation.ts` 集中封装 `ElMessageBox.confirm`，将结果归一化为 `confirmed | cancelled | closed`；调用方必须为三个结果分别定义行为，关闭不得默认执行取消分支。
 - stale version 不自动 retry；401/403、validation、conflict、network 和 invalid response 保持可区分状态。
+- 前端校验失败不调用 API；后端字段错误进入同一字段状态，未知字段或非字段问题保留为表单级错误。
+- 可选 URL、文本和日期的空字符串在 schema 边界归一化为 `null`；slug 按后端规则 trim、转小写并验证 3 至 120 位格式。
+- 管理文章列表通过 `Intl.DateTimeFormat` 将已校验的 `updatedAt` Instant 显示为浏览器本地日期时间，并用 `<time datetime>` 保留原始 UTC 值。
 - 文章/项目 Pinia draft store 只保留未提交可编辑字段，使用 new/resource key 和 version 防止过期草稿覆盖新数据。
 
 ## 11. Routing And Views
@@ -225,9 +239,9 @@ Raw admin Markdown
 | A9-A10 项目与预览 | `ProjectAdminServiceIntegrationTest`、`AdminProjectApiIntegrationTest`、project Vitest、`admin-portfolio.spec.ts` |
 | A11-A12 portfolio | `PortfolioAdminServiceIntegrationTest`、`AdminPortfolioApiIntegrationTest`、portfolio Vitest/E2E |
 | A13 契约 | `AdminOpenApiIntegrationTest`、admin schema/client tests、`contract:check` |
-| A14 数据层 | `admin-schema.spec.ts`、`admin-client.spec.ts`、`admin-query.spec.ts`、draft store tests |
-| A15 路由与外壳 | `admin-routing.spec.ts`、`admin-layout.spec.ts`、router tests、security E2E |
-| A16-A17 页面体验 | article/taxonomy/project/portfolio View tests 与管理 E2E |
+| A14 数据层 | `admin-schema.spec.ts`、`admin-client.spec.ts`、`admin-query.spec.ts`、`admin-form-validation.spec.ts`、draft store tests |
+| A15 路由与外壳 | `admin-element-plus.spec.ts`、`admin-routing.spec.ts`、`admin-layout.spec.ts`、router tests、security E2E |
+| A16-A17 页面体验 | `admin-confirmation.spec.ts`、operation feedback、`AdminFormField.spec.ts`、article/taxonomy/project/portfolio View tests 与管理 E2E |
 | A18 聚合回归 | backend verify、frontend lint/typecheck/test/build、contract、Compose、Playwright |
 
 聚合验证入口：

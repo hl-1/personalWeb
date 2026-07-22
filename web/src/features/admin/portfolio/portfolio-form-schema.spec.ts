@@ -8,6 +8,12 @@ describe('portfolio form schemas', () => {
     expect(parseExperienceForm({ organization:'Org',role:'Role',startDate:'2020-01-01',endDate:null,
       summaryMarkdown:'',sortOrder:0,visible:true,version:0 }).organization).toBe('Org')
   })
+  it('normalizes blank optional text and dates', () => {
+    expect(parseProfileForm({ displayName:'Name',headline:'Headline',bioMarkdown:'',seoDescription:'',version:null }).seoDescription).toBeNull()
+    expect(parseSkillForm({ name:'Java',category:'Backend',summary:'',sortOrder:0,visible:true,version:0 }).summary).toBeNull()
+    expect(parseExperienceForm({ organization:'Org',role:'Role',startDate:'2020-01-01',endDate:'',
+      summaryMarkdown:'',sortOrder:0,visible:true,version:0 }).endDate).toBeNull()
+  })
   it.each([
     () => parseProfileForm({ displayName:'',headline:'H',bioMarkdown:'',seoDescription:null,version:null }),
     () => parseSkillForm({ name:'Java',category:'Backend',summary:null,sortOrder:-1,visible:true,version:0 }),

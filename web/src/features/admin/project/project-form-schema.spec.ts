@@ -8,6 +8,12 @@ const valid = { slug: 'project-name', title: 'Project', summary: 'Summary',
 describe('project form schema', () => {
   it('parses valid project fields', () => expect(parseProjectForm(valid)).toEqual(valid))
 
+  it('normalizes the slug and blank optional URLs', () => {
+    expect(parseProjectForm({
+      ...valid, slug: '  PROJECT-NAME  ', projectUrl: '', repositoryUrl: '',
+    })).toMatchObject({ slug: 'project-name', projectUrl: null, repositoryUrl: null })
+  })
+
   it.each([
     { ...valid, slug: 'Bad Slug' }, { ...valid, title: '' },
     { ...valid, summary: 'x'.repeat(501) }, { ...valid, descriptionMarkdown: 'x'.repeat(100_001) },
